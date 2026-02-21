@@ -7,7 +7,7 @@ uv.pkg-path = "uv"
 [vars]
 COMFYUI_HOST = "localhost"
 COMFYUI_PORT = "8188"
-COMFYUI_WORKFLOWS = "/home/daedalus/comfyui-work/user/default/workflows/api"
+COMFYUI_WORKFLOWS = "/home/daedalus/comfyui-work/user/default/workflows"
 
 [hook]
 on-activate = '''
@@ -60,14 +60,14 @@ sandbox = "off"
 command = '''
 mkdir -p $out/bin
 
-WORKFLOWS_BASE="/home/daedalus/comfyui-work/user/default/workflows/api"
+WORKFLOWS_BASE="/home/daedalus/comfyui-work/user/default/workflows"
 
-# Define models and their workflow directories
+# Define models and their workflow directories (uppercase)
 declare -A MODEL_DIRS=(
-  ["sd15"]="sd1.5"
-  ["sdxl"]="sdxl"
-  ["sd35"]="sd3.5"
-  ["flux"]="flux"
+  ["sd15"]="SD15"
+  ["sdxl"]="SDXL"
+  ["sd35"]="SD35"
+  ["flux"]="FLUX"
 )
 
 # Generate scripts for each model and operation
