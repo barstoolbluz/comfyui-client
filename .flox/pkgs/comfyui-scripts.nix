@@ -1,27 +1,21 @@
 { lib, writeShellApplication, writeTextFile, symlinkJoin, runCommand }:
 
 let
-  # Model configurations: script prefix -> directory name
-  models = {
-    sd15 = "SD15";
-    sdxl = "SDXL";
-    sd35 = "SD35";
-    flux = "FLUX";
-  };
+  # Model types for workflow scripts
+  models = [ "sd15" "sdxl" "sd35" "flux" ];
 
   operations = [ "txt2img" "img2img" "upscale" ];
 
   # Generate a single workflow wrapper script
   makeScript = model: op:
     let
-      dir = models.${model};
       name = "${model}-${op}";
     in
     writeShellApplication {
       inherit name;
       text = ''
         WORKFLOWS_BASE="''${COMFYUI_WORKFLOWS:-$HOME/comfyui-work/user/default/workflows}"
-        WORKFLOW="$WORKFLOWS_BASE/${dir}/${model}-${op}.json"
+        WORKFLOW="$WORKFLOWS_BASE/api/${model}/${model}-${op}.json"
 
         if [ ! -f "$WORKFLOW" ]; then
           echo "Error: Workflow not found: $WORKFLOW" >&2
@@ -35,7 +29,7 @@ let
 
   # Generate all workflow scripts
   allScripts = lib.flatten (
-    lib.mapAttrsToList (model: _:
+    map (model:
       map (op: makeScript model op) operations
     ) models
   );
