@@ -120,7 +120,16 @@ let
                   f"{self.base_url}/prompt",
                   json={"prompt": workflow, "client_id": self.client_id}
               )
-              response.raise_for_status()
+              if response.status_code >= 400:
+                  try:
+                      error_data = response.json()
+                      error_msg = error_data.get("error", {}).get("message", response.text)
+                      node_errors = error_data.get("node_errors", {})
+                      if node_errors:
+                          error_msg += f"\nNode errors: {node_errors}"
+                  except Exception:
+                      error_msg = response.text
+                  raise RuntimeError(f"ComfyUI error ({response.status_code}): {error_msg}")
               return response.json()["prompt_id"]
 
           def get_history(self, prompt_id: str) -> dict:
