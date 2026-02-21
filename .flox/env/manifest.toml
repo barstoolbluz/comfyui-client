@@ -1,52 +1,9 @@
 version = 1
 
 [install]
-python.pkg-path = "python313"
-uv.pkg-path = "uv"
-comfyui-scripts.pkg-path = "flox/comfyui-scripts"
 
 [vars]
-COMFYUI_HOST = "localhost"
-COMFYUI_PORT = "8188"
-COMFYUI_WORKFLOWS = "/home/daedalus/comfyui-work/user/default/workflows"
 
 [hook]
-on-activate = '''
-# Create workflows symlink if target exists
-if [ -d "$COMFYUI_WORKFLOWS" ] && [ ! -e "workflows" ]; then
-  ln -s "$COMFYUI_WORKFLOWS" workflows
-fi
-
-# Setup Python venv in cache
-VENV="$FLOX_ENV_CACHE/venv"
-if [ ! -d "$VENV" ]; then
-  uv venv "$VENV" --python "$(which python)"
-fi
-
-unset PYTHONPATH
-export VIRTUAL_ENV_DISABLE_PROMPT=1
-source "$VENV/bin/activate"
-
-# Install Python CLI from package if not present
-if [ ! -f "$VENV/bin/comfyui-submit" ]; then
-  comfyui-client-setup "$VENV"
-fi
-'''
 
 [profile]
-common = '''
-export PATH="$FLOX_ENV_CACHE/venv/bin:$PATH"
-export VIRTUAL_ENV_DISABLE_PROMPT=1
-'''
-
-bash = '''
-unset PYTHONPATH
-'''
-
-zsh = '''
-unset PYTHONPATH
-'''
-
-fish = '''
-set -e PYTHONPATH 2>/dev/null
-'''
