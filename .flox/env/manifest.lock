@@ -3,12 +3,6 @@
   "manifest": {
     "version": 1,
     "install": {
-      "comfyui-scripts": {
-        "pkg-path": "barstoolbluz/comfyui-scripts",
-        "systems": [
-          "x86_64-linux"
-        ]
-      },
       "python": {
         "pkg-path": "python313"
       },
@@ -33,34 +27,6 @@
     "options": {}
   },
   "packages": [
-    {
-      "attr_path": "comfyui-scripts",
-      "broken": false,
-      "derivation": "/nix/store/hqrca8d8id0yzlnzzkqyca6aqj1v736j-comfyui-scripts.drv",
-      "description": "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)",
-      "install_id": "comfyui-scripts",
-      "locked_url": "https://github.com/barstoolbluz/comfyui-client.git?rev=fa3a011eab20827e32288411314f6447713863b3",
-      "name": "comfyui-scripts",
-      "pname": "comfyui-scripts",
-      "rev": "fa3a011eab20827e32288411314f6447713863b3",
-      "rev_count": 6,
-      "rev_date": "2026-02-21T02:34:43Z",
-      "scrape_date": "2026-02-21T02:35:27.529412709Z",
-      "stabilities": [
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "unknown",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/4g1k9dsji59rgfzaq5l0pnv40a3hshmg-comfyui-scripts"
-      },
-      "system": "x86_64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
     {
       "attr_path": "python313",
       "broken": false,

@@ -3,8 +3,6 @@ version = 1
 [install]
 python.pkg-path = "python313"
 uv.pkg-path = "uv"
-comfyui-scripts.pkg-path = "barstoolbluz/comfyui-scripts"
-comfyui-scripts.systems = ["x86_64-linux"]
 
 [vars]
 COMFYUI_HOST = "localhost"
