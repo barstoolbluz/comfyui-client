@@ -480,6 +480,373 @@ let
     cp ${cliPy} $out/share/comfyui-client/src/comfyui_client/cli.py
   '';
 
+  # Man pages
+  manSubmit = writeTextFile {
+    name = "comfyui-submit.1";
+    text = ''
+      .TH COMFYUI-SUBMIT 1 "2026-02-21" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-submit \- submit a workflow to ComfyUI
+      .SH SYNOPSIS
+      .B comfyui-submit
+      .I workflow_path
+      .RI [ OPTIONS ]
+      .SH DESCRIPTION
+      .B comfyui-submit
+      submits a ComfyUI workflow JSON file to a running ComfyUI server for execution.
+      The workflow can be modified on-the-fly using command-line options to set
+      prompts, seeds, dimensions, and other generation parameters.
+      .SH ARGUMENTS
+      .TP
+      .I workflow_path
+      Path to the ComfyUI workflow JSON file. This should be a workflow exported
+      in API format (not the standard web UI format).
+      .SH OPTIONS
+      .TP
+      .BR \-p ", " \-\-prompt " " \fITEXT\fR
+      Set the positive prompt text. This replaces the text in CLIPTextEncode nodes
+      that have "positive" or "prompt" in their title.
+      .TP
+      .BR \-n ", " \-\-negative " " \fITEXT\fR
+      Set the negative prompt text. This replaces the text in CLIPTextEncode nodes
+      that have "negative" in their title.
+      .TP
+      .BR \-s ", " \-\-seed " " \fIINT\fR
+      Set the random seed for generation. Applied to KSampler, KSamplerAdvanced,
+      and SamplerCustom nodes.
+      .TP
+      .BR \-\-steps " " \fIINT\fR
+      Set the number of sampling steps.
+      .TP
+      .BR \-\-cfg " " \fIFLOAT\fR
+      Set the CFG (Classifier-Free Guidance) scale. Higher values follow the prompt
+      more closely. Typical range is 5.0-15.0.
+      .TP
+      .BR \-W ", " \-\-width " " \fIINT\fR
+      Set the image width in pixels. Must be used together with \fB\-\-height\fR.
+      .TP
+      .BR \-H ", " \-\-height " " \fIINT\fR
+      Set the image height in pixels. Must be used together with \fB\-\-width\fR.
+      .TP
+      .BR \-d ", " \-\-denoise " " \fIFLOAT\fR
+      Set the denoise strength for img2img workflows. Range is 0.0 (no change) to
+      1.0 (full regeneration). Typical values for img2img are 0.4-0.8.
+      .TP
+      .BR \-\-sampler " " \fINAME\fR
+      Set the sampler algorithm. Common values: euler, euler_ancestral, heun,
+      dpmpp_2m, dpmpp_2m_sde, dpmpp_3m_sde, uni_pc, ddim.
+      .TP
+      .BR \-\-scheduler " " \fINAME\fR
+      Set the scheduler type. Values: normal, karras, exponential, sgm_uniform,
+      simple, ddim_uniform, beta.
+      .TP
+      .BR \-i ", " \-\-image " " \fIPATH\fR
+      Set the input image path for img2img workflows. This sets the image in
+      LoadImage nodes.
+      .TP
+      .BR \-w ", " \-\-wait
+      Wait for the workflow to complete before exiting. Without this flag, the
+      command exits immediately after submission.
+      .TP
+      .BR \-o ", " \-\-output " " \fIDIR\fR
+      Output directory for downloading generated images. Only effective when used
+      with \fB\-\-wait\fR. Images are saved with their original filenames.
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH EXAMPLES
+      Submit a workflow and wait for completion:
+      .PP
+      .RS
+      .nf
+      comfyui-submit workflow.json --wait
+      .fi
+      .RE
+      .PP
+      Generate an image with a custom prompt and seed:
+      .PP
+      .RS
+      .nf
+      comfyui-submit workflow.json \\
+          -p "a serene mountain landscape at sunset" \\
+          -n "blurry, low quality" \\
+          -s 42 --wait -o ./output
+      .fi
+      .RE
+      .PP
+      Img2img with custom denoise strength:
+      .PP
+      .RS
+      .nf
+      comfyui-submit img2img.json \\
+          -i input.png -d 0.6 --wait
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-queue (1),
+      .BR comfyui-result (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
+  manQueue = writeTextFile {
+    name = "comfyui-queue.1";
+    text = ''
+      .TH COMFYUI-QUEUE 1 "2026-02-21" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-queue \- show ComfyUI queue status
+      .SH SYNOPSIS
+      .B comfyui-queue
+      .SH DESCRIPTION
+      .B comfyui-queue
+      displays the current status of the ComfyUI execution queue, showing the
+      number of running and pending workflows.
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH OUTPUT
+      The command outputs two lines:
+      .PP
+      .RS
+      .nf
+      Running: N
+      Pending: M
+      .fi
+      .RE
+      .PP
+      Where N is the number of currently executing workflows and M is the number
+      of workflows waiting in the queue.
+      .SH EXAMPLES
+      Check queue status:
+      .PP
+      .RS
+      .nf
+      comfyui-queue
+      .fi
+      .RE
+      .PP
+      Check queue on a remote server:
+      .PP
+      .RS
+      .nf
+      COMFYUI_HOST=server.local comfyui-queue
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-result (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
+  manResult = writeTextFile {
+    name = "comfyui-result.1";
+    text = ''
+      .TH COMFYUI-RESULT 1 "2026-02-21" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-result \- retrieve results from a ComfyUI workflow
+      .SH SYNOPSIS
+      .B comfyui-result
+      .I prompt_id
+      .RI [ OPTIONS ]
+      .SH DESCRIPTION
+      .B comfyui-result
+      retrieves and downloads the output images from a previously submitted
+      ComfyUI workflow. The workflow must have completed successfully.
+      .SH ARGUMENTS
+      .TP
+      .I prompt_id
+      The prompt ID returned by
+      .BR comfyui-submit (1)
+      when the workflow was submitted. This is a UUID that uniquely identifies
+      the workflow execution.
+      .SH OPTIONS
+      .TP
+      .BR \-o ", " \-\-output " " \fIDIR\fR
+      Output directory for downloading images. Default: current directory (.)
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH EXAMPLES
+      Download results to current directory:
+      .PP
+      .RS
+      .nf
+      comfyui-result abc12345-6789-...
+      .fi
+      .RE
+      .PP
+      Download to a specific directory:
+      .PP
+      .RS
+      .nf
+      comfyui-result abc12345-6789-... -o ./images
+      .fi
+      .RE
+      .SH EXIT STATUS
+      .TP
+      .B 0
+      Success
+      .TP
+      .B 1
+      Prompt ID not found in history
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-queue (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
+  manOverview = writeTextFile {
+    name = "comfyui-client.7";
+    text = ''
+      .TH COMFYUI-CLIENT 7 "2026-02-21" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-client \- command-line interface for ComfyUI
+      .SH DESCRIPTION
+      The comfyui-client package provides command-line tools for interacting with
+      a ComfyUI server. It includes core commands for workflow submission and
+      management, as well as convenient wrapper scripts for common operations.
+      .SH COMMANDS
+      The package provides these core commands:
+      .TP
+      .BR comfyui-submit (1)
+      Submit a workflow JSON file to ComfyUI with optional parameter overrides.
+      .TP
+      .BR comfyui-queue (1)
+      Display the current queue status.
+      .TP
+      .BR comfyui-result (1)
+      Retrieve output images from a completed workflow.
+      .SH WRAPPER SCRIPTS
+      For convenience, the package includes wrapper scripts that automatically
+      select the appropriate workflow file for common model/operation combinations.
+      Each wrapper calls
+      .B comfyui-submit
+      with the \fB\-\-wait\fR flag and passes through all other arguments.
+      .SS Stable Diffusion 1.5
+      .TP
+      .B sd15-txt2img
+      Text-to-image generation using SD 1.5
+      .TP
+      .B sd15-img2img
+      Image-to-image generation using SD 1.5
+      .TP
+      .B sd15-upscale
+      Upscaling using SD 1.5
+      .SS Stable Diffusion XL
+      .TP
+      .B sdxl-txt2img
+      Text-to-image generation using SDXL
+      .TP
+      .B sdxl-img2img
+      Image-to-image generation using SDXL
+      .TP
+      .B sdxl-upscale
+      Upscaling using SDXL
+      .SS Stable Diffusion 3.5
+      .TP
+      .B sd35-txt2img
+      Text-to-image generation using SD 3.5
+      .TP
+      .B sd35-img2img
+      Image-to-image generation using SD 3.5
+      .TP
+      .B sd35-upscale
+      Upscaling using SD 3.5
+      .SS FLUX
+      .TP
+      .B flux-txt2img
+      Text-to-image generation using FLUX
+      .TP
+      .B flux-img2img
+      Image-to-image generation using FLUX
+      .TP
+      .B flux-upscale
+      Upscaling using FLUX
+      .SH WORKFLOW FILES
+      Wrapper scripts look for workflow files in a standard location:
+      .PP
+      .RS
+      .nf
+      $COMFYUI_WORKFLOWS/api/<model>/<model>-<operation>.json
+      .fi
+      .RE
+      .PP
+      For example,
+      .B sdxl-txt2img
+      loads:
+      .PP
+      .RS
+      .nf
+      $COMFYUI_WORKFLOWS/api/sdxl/sdxl-txt2img.json
+      .fi
+      .RE
+      .PP
+      Workflow files must be in ComfyUI API format (exported via "Save (API Format)"
+      in the ComfyUI web interface or converted from standard format).
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .TP
+      .B COMFYUI_WORKFLOWS
+      Base directory containing workflow files. Default: $HOME/comfyui-work/user/default/workflows
+      .SH EXAMPLES
+      Generate an image with SDXL:
+      .PP
+      .RS
+      .nf
+      sdxl-txt2img -p "a beautiful sunset over mountains" -o ./output
+      .fi
+      .RE
+      .PP
+      Upscale an image with FLUX:
+      .PP
+      .RS
+      .nf
+      flux-upscale -i input.png -d 0.4 -o ./upscaled
+      .fi
+      .RE
+      .PP
+      Submit a custom workflow to a remote server:
+      .PP
+      .RS
+      .nf
+      COMFYUI_HOST=gpu-server.local comfyui-submit custom.json --wait
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-queue (1),
+      .BR comfyui-result (1)
+    '';
+  };
+
+  # Bundle man pages
+  manPages = runCommand "comfyui-client-man" {} ''
+    mkdir -p $out/share/man/man1 $out/share/man/man7
+    cp ${manSubmit} $out/share/man/man1/comfyui-submit.1
+    cp ${manQueue} $out/share/man/man1/comfyui-queue.1
+    cp ${manResult} $out/share/man/man1/comfyui-result.1
+    cp ${manOverview} $out/share/man/man7/comfyui-client.7
+  '';
+
   # Setup script to install Python package into venv
   setupScript = writeShellApplication {
     name = "comfyui-client-setup";
@@ -509,7 +876,7 @@ let
 in
 symlinkJoin {
   name = "comfyui-scripts";
-  paths = allScripts ++ [ pythonSource setupScript ];
+  paths = allScripts ++ [ pythonSource setupScript manPages ];
   meta = {
     description = "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)";
   };
