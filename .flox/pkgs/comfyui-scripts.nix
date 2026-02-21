@@ -1,8 +1,6 @@
 { lib, writeShellApplication, symlinkJoin }:
 
 let
-  workflowsBase = "/home/daedalus/comfyui-work/user/default/workflows";
-
   # Model configurations: script prefix -> directory name
   models = {
     sd15 = "SD15";
@@ -18,16 +16,16 @@ let
     let
       dir = models.${model};
       name = "${model}-${op}";
-      workflowPath = "${workflowsBase}/${dir}/${model}-${op}.json";
     in
     writeShellApplication {
       inherit name;
       text = ''
-        WORKFLOW="${workflowPath}"
+        WORKFLOWS_BASE="''${COMFYUI_WORKFLOWS:-$HOME/comfyui-work/user/default/workflows}"
+        WORKFLOW="$WORKFLOWS_BASE/${dir}/${model}-${op}.json"
 
         if [ ! -f "$WORKFLOW" ]; then
           echo "Error: Workflow not found: $WORKFLOW" >&2
-          echo "Make sure ComfyUI is installed with workflows." >&2
+          echo "Set COMFYUI_WORKFLOWS to your workflows directory." >&2
           exit 1
         fi
 
