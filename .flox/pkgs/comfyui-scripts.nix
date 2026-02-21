@@ -450,7 +450,7 @@ let
     name = "comfyui-client-setup";
     text = ''
       VENV="''${1:-$FLOX_ENV_CACHE/venv}"
-      SOURCE_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/share/comfyui-client"
+      SOURCE_DIR="''${FLOX_ENV}/share/comfyui-client"
 
       if [ ! -d "$VENV" ]; then
         echo "Error: venv not found at $VENV" >&2
