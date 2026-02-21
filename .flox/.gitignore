@@ -3,3 +3,4 @@ cache/
 lib/
 log/
 !env/
+env.lock
