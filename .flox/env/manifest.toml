@@ -3,7 +3,7 @@ version = 1
 [install]
 python.pkg-path = "python313"
 uv.pkg-path = "uv"
-comfyui-scripts.pkg-path = "flox/comfyui-scripts"
+#comfyui-scripts.pkg-path = "flox/comfyui-scripts"
 
 [vars]
 COMFYUI_HOST = "localhost"
