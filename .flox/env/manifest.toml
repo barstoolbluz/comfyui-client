@@ -1,0 +1,101 @@
+version = 1
+
+[install]
+python.pkg-path = "python313"
+uv.pkg-path = "uv"
+
+[vars]
+COMFYUI_HOST = "localhost"
+COMFYUI_PORT = "8188"
+COMFYUI_WORKFLOWS = "/home/daedalus/comfyui-work/user/default/workflows/api"
+
+[hook]
+on-activate = '''
+# Create workflows symlink if target exists
+if [ -d "$COMFYUI_WORKFLOWS" ] && [ ! -e "workflows" ]; then
+  ln -s "$COMFYUI_WORKFLOWS" workflows
+fi
+
+# Setup Python venv
+FLOX_PYTHON=$(which python)
+if [ ! -d ".venv" ]; then
+  uv venv .venv --python "$FLOX_PYTHON"
+fi
+
+unset PYTHONPATH
+source .venv/bin/activate
+
+if [ ! -f ".venv/.deps_installed" ] || [ ! -f ".venv/bin/comfyui-queue" ]; then
+  uv pip install -e ".[dev]"
+  touch .venv/.deps_installed
+fi
+'''
+
+[profile]
+common = '''
+export PATH="$FLOX_ENV_PROJECT/.venv/bin:$PATH"
+'''
+
+bash = '''
+unset PYTHONPATH
+source "$FLOX_ENV_PROJECT/.venv/bin/activate" 2>/dev/null || true
+'''
+
+zsh = '''
+unset PYTHONPATH
+source "$FLOX_ENV_PROJECT/.venv/bin/activate" 2>/dev/null || true
+'''
+
+fish = '''
+set -e PYTHONPATH 2>/dev/null
+if test -f "$FLOX_ENV_PROJECT/.venv/bin/activate.fish"
+    source "$FLOX_ENV_PROJECT/.venv/bin/activate.fish"
+end
+'''
+
+[build.comfyui-scripts]
+description = "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)"
+version = "0.1.0"
+sandbox = "off"
+command = '''
+mkdir -p $out/bin
+
+WORKFLOWS_BASE="/home/daedalus/comfyui-work/user/default/workflows/api"
+
+# Define models and their workflow directories
+declare -A MODEL_DIRS=(
+  ["sd15"]="sd1.5"
+  ["sdxl"]="sdxl"
+  ["sd35"]="sd3.5"
+  ["flux"]="flux"
+)
+
+# Generate scripts for each model and operation
+for model in sd15 sdxl sd35 flux; do
+  model_dir="${MODEL_DIRS[$model]}"
+
+  for op in txt2img img2img upscale; do
+    script_name="${model}-${op}"
+    workflow_path="${WORKFLOWS_BASE}/${model_dir}/${model}-${op}.json"
+
+    cat > "$out/bin/${script_name}" << SCRIPT_EOF
+#!/usr/bin/env bash
+# ${script_name} - Submit ${op} workflow for ${model}
+set -euo pipefail
+
+WORKFLOW="${workflow_path}"
+
+if [ ! -f "\$WORKFLOW" ]; then
+  echo "Error: Workflow not found: \$WORKFLOW" >&2
+  echo "Make sure ComfyUI is installed with workflows." >&2
+  exit 1
+fi
+
+exec comfyui-submit "\$WORKFLOW" --wait "\$@"
+SCRIPT_EOF
+    chmod +x "$out/bin/${script_name}"
+  done
+done
+
+echo "Built scripts: sd15-txt2img sd15-img2img sd15-upscale sdxl-txt2img sdxl-img2img sdxl-upscale sd35-txt2img sd35-img2img sd35-upscale flux-txt2img flux-img2img flux-upscale"
+'''

@@ -1,0 +1,288 @@
+{
+  "lockfile-version": 1,
+  "manifest": {
+    "version": 1,
+    "install": {
+      "python": {
+        "pkg-path": "python313"
+      },
+      "uv": {
+        "pkg-path": "uv"
+      }
+    },
+    "vars": {
+      "COMFYUI_HOST": "localhost",
+      "COMFYUI_PORT": "8188",
+      "COMFYUI_WORKFLOWS": "/home/daedalus/comfyui-work/user/default/workflows/api"
+    },
+    "hook": {
+      "on-activate": "# Create workflows symlink if target exists\nif [ -d \"$COMFYUI_WORKFLOWS\" ] && [ ! -e \"workflows\" ]; then\n  ln -s \"$COMFYUI_WORKFLOWS\" workflows\nfi\n\n# Setup Python venv\nFLOX_PYTHON=$(which python)\nif [ ! -d \".venv\" ]; then\n  uv venv .venv --python \"$FLOX_PYTHON\"\nfi\n\nunset PYTHONPATH\nsource .venv/bin/activate\n\nif [ ! -f \".venv/.deps_installed\" ] || [ ! -f \".venv/bin/comfyui-queue\" ]; then\n  uv pip install -e \".[dev]\"\n  touch .venv/.deps_installed\nfi\n"
+    },
+    "profile": {
+      "common": "export PATH=\"$FLOX_ENV_PROJECT/.venv/bin:$PATH\"\n",
+      "bash": "unset PYTHONPATH\nsource \"$FLOX_ENV_PROJECT/.venv/bin/activate\" 2>/dev/null || true\n",
+      "zsh": "unset PYTHONPATH\nsource \"$FLOX_ENV_PROJECT/.venv/bin/activate\" 2>/dev/null || true\n",
+      "fish": "set -e PYTHONPATH 2>/dev/null\nif test -f \"$FLOX_ENV_PROJECT/.venv/bin/activate.fish\"\n    source \"$FLOX_ENV_PROJECT/.venv/bin/activate.fish\"\nend\n"
+    },
+    "options": {},
+    "build": {
+      "comfyui-scripts": {
+        "command": "mkdir -p $out/bin\n\nWORKFLOWS_BASE=\"/home/daedalus/comfyui-work/user/default/workflows/api\"\n\n# Define models and their workflow directories\ndeclare -A MODEL_DIRS=(\n  [\"sd15\"]=\"sd1.5\"\n  [\"sdxl\"]=\"sdxl\"\n  [\"sd35\"]=\"sd3.5\"\n  [\"flux\"]=\"flux\"\n)\n\n# Generate scripts for each model and operation\nfor model in sd15 sdxl sd35 flux; do\n  model_dir=\"${MODEL_DIRS[$model]}\"\n\n  for op in txt2img img2img upscale; do\n    script_name=\"${model}-${op}\"\n    workflow_path=\"${WORKFLOWS_BASE}/${model_dir}/${model}-${op}.json\"\n\n    cat > \"$out/bin/${script_name}\" << SCRIPT_EOF\n#!/usr/bin/env bash\n# ${script_name} - Submit ${op} workflow for ${model}\nset -euo pipefail\n\nWORKFLOW=\"${workflow_path}\"\n\nif [ ! -f \"\\$WORKFLOW\" ]; then\n  echo \"Error: Workflow not found: \\$WORKFLOW\" >&2\n  echo \"Make sure ComfyUI is installed with workflows.\" >&2\n  exit 1\nfi\n\nexec comfyui-submit \"\\$WORKFLOW\" --wait \"\\$@\"\nSCRIPT_EOF\n    chmod +x \"$out/bin/${script_name}\"\n  done\ndone\n\necho \"Built scripts: sd15-txt2img sd15-img2img sd15-upscale sdxl-txt2img sdxl-img2img sdxl-upscale sd35-txt2img sd35-img2img sd35-upscale flux-txt2img flux-img2img flux-upscale\"\n",
+        "sandbox": "off",
+        "version": "0.1.0",
+        "description": "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)"
+      }
+    }
+  },
+  "packages": [
+    {
+      "attr_path": "python313",
+      "broken": false,
+      "derivation": "/nix/store/2f9f2hcw24ncf86i63v9apf9s0k2fgyz-python3-3.13.11.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
+      "name": "python3-3.13.11",
+      "pname": "python313",
+      "rev": "0182a361324364ae3f436a63005877674cf45efb",
+      "rev_count": 948083,
+      "rev_date": "2026-02-17T23:04:30Z",
+      "scrape_date": "2026-02-19T04:40:32.514610Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.13.11",
+      "outputs_to_install": [
+        "out",
+        "out",
+        "out",
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/qzgxkh5rnlswnj5ywhag0djwvn83kr3r-python3-3.13.11"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python313",
+      "broken": false,
+      "derivation": "/nix/store/cadmaxzh2h1i0id6zfa5zq0mjpr9qqda-python3-3.13.11.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
+      "name": "python3-3.13.11",
+      "pname": "python313",
+      "rev": "0182a361324364ae3f436a63005877674cf45efb",
+      "rev_count": 948083,
+      "rev_date": "2026-02-17T23:04:30Z",
+      "scrape_date": "2026-02-19T05:13:54.876857Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.13.11",
+      "outputs_to_install": [
+        "out",
+        "out",
+        "out",
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/bzb0vriv1a1kaz9zv6lzv62zkcvvm88r-python3-3.13.11-debug",
+        "out": "/nix/store/ygzfhw5nxrn7qqfqmz2s9p6cikcjqqkh-python3-3.13.11"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python313",
+      "broken": false,
+      "derivation": "/nix/store/dk525f5vnsqf4c5m90rhm2hazww34xmx-python3-3.13.11.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
+      "name": "python3-3.13.11",
+      "pname": "python313",
+      "rev": "0182a361324364ae3f436a63005877674cf45efb",
+      "rev_count": 948083,
+      "rev_date": "2026-02-17T23:04:30Z",
+      "scrape_date": "2026-02-19T05:46:18.564549Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.13.11",
+      "outputs_to_install": [
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/5wy2gaa1kaskq3j63zwl1jw6a0ffllx5-python3-3.13.11"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python313",
+      "broken": false,
+      "derivation": "/nix/store/bmlsz2bfdg16dr10k8rm3hmkq09h06nr-python3-3.13.11.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
+      "name": "python3-3.13.11",
+      "pname": "python313",
+      "rev": "0182a361324364ae3f436a63005877674cf45efb",
+      "rev_count": 948083,
+      "rev_date": "2026-02-17T23:04:30Z",
+      "scrape_date": "2026-02-19T06:24:29.795028Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.13.11",
+      "outputs_to_install": [
+        "out",
+        "out",
+        "out",
+        "out",
+        "out",
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/gvhg8py0jr9v83ysqb86rr2s1yidppca-python3-3.13.11-debug",
+        "out": "/nix/store/slhpx9glq7vl99bwi93bgrhn3syv98s1-python3-3.13.11"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "uv",
+      "broken": false,
+      "derivation": "/nix/store/wgg6xdh7iywa1swy1cv9k0sxx3kf2jnw-uv-0.10.2.drv",
+      "description": "Extremely fast Python package installer and resolver, written in Rust",
+      "install_id": "uv",
+      "license": "[ Apache-2.0, MIT ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
+      "name": "uv-0.10.2",
+      "pname": "uv",
+      "rev": "0182a361324364ae3f436a63005877674cf45efb",
+      "rev_count": 948083,
+      "rev_date": "2026-02-17T23:04:30Z",
+      "scrape_date": "2026-02-19T04:42:25.201613Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.10.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/3vhsffs1rr2vn84f41z8vm3lmya12ig3-uv-0.10.2"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "uv",
+      "broken": false,
+      "derivation": "/nix/store/wb6jzw65qqdv81k4kg7q19wh3b747an7-uv-0.10.2.drv",
+      "description": "Extremely fast Python package installer and resolver, written in Rust",
+      "install_id": "uv",
+      "license": "[ Apache-2.0, MIT ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
+      "name": "uv-0.10.2",
+      "pname": "uv",
+      "rev": "0182a361324364ae3f436a63005877674cf45efb",
+      "rev_count": 948083,
+      "rev_date": "2026-02-17T23:04:30Z",
+      "scrape_date": "2026-02-19T05:16:16.682800Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.10.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/f7nhvja5sbfcgjcfpwd4zmdzl7f5m2h2-uv-0.10.2"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "uv",
+      "broken": false,
+      "derivation": "/nix/store/hpwjnifdg4r5izpdfvd9z678xf5zdvnd-uv-0.10.2.drv",
+      "description": "Extremely fast Python package installer and resolver, written in Rust",
+      "install_id": "uv",
+      "license": "[ Apache-2.0, MIT ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
+      "name": "uv-0.10.2",
+      "pname": "uv",
+      "rev": "0182a361324364ae3f436a63005877674cf45efb",
+      "rev_count": 948083,
+      "rev_date": "2026-02-17T23:04:30Z",
+      "scrape_date": "2026-02-19T05:48:10.435101Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.10.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/l4skdwvihbzynnihi5l44c38xcw3xaxh-uv-0.10.2"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "uv",
+      "broken": false,
+      "derivation": "/nix/store/ydcjwj7hbl4pw9prb8x0w75cizgrsnsb-uv-0.10.2.drv",
+      "description": "Extremely fast Python package installer and resolver, written in Rust",
+      "install_id": "uv",
+      "license": "[ Apache-2.0, MIT ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
+      "name": "uv-0.10.2",
+      "pname": "uv",
+      "rev": "0182a361324364ae3f436a63005877674cf45efb",
+      "rev_count": 948083,
+      "rev_date": "2026-02-17T23:04:30Z",
+      "scrape_date": "2026-02-19T06:27:00.965752Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.10.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/ksi4jmfapiqnk1lclzlf2hrdj6s1rzjs-uv-0.10.2"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    }
+  ]
+}
