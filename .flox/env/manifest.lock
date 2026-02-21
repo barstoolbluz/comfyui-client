@@ -13,7 +13,7 @@
     "vars": {
       "COMFYUI_HOST": "localhost",
       "COMFYUI_PORT": "8188",
-      "COMFYUI_WORKFLOWS": "/home/daedalus/comfyui-work/user/default/workflows/api"
+      "COMFYUI_WORKFLOWS": "/home/daedalus/comfyui-work/user/default/workflows"
     },
     "hook": {
       "on-activate": "# Create workflows symlink if target exists\nif [ -d \"$COMFYUI_WORKFLOWS\" ] && [ ! -e \"workflows\" ]; then\n  ln -s \"$COMFYUI_WORKFLOWS\" workflows\nfi\n\n# Setup Python venv\nFLOX_PYTHON=$(which python)\nif [ ! -d \".venv\" ]; then\n  uv venv .venv --python \"$FLOX_PYTHON\"\nfi\n\nunset PYTHONPATH\nsource .venv/bin/activate\n\nif [ ! -f \".venv/.deps_installed\" ] || [ ! -f \".venv/bin/comfyui-queue\" ]; then\n  uv pip install -e \".[dev]\"\n  touch .venv/.deps_installed\nfi\n"
@@ -27,7 +27,7 @@
     "options": {},
     "build": {
       "comfyui-scripts": {
-        "command": "mkdir -p $out/bin\n\nWORKFLOWS_BASE=\"/home/daedalus/comfyui-work/user/default/workflows/api\"\n\n# Define models and their workflow directories\ndeclare -A MODEL_DIRS=(\n  [\"sd15\"]=\"sd1.5\"\n  [\"sdxl\"]=\"sdxl\"\n  [\"sd35\"]=\"sd3.5\"\n  [\"flux\"]=\"flux\"\n)\n\n# Generate scripts for each model and operation\nfor model in sd15 sdxl sd35 flux; do\n  model_dir=\"${MODEL_DIRS[$model]}\"\n\n  for op in txt2img img2img upscale; do\n    script_name=\"${model}-${op}\"\n    workflow_path=\"${WORKFLOWS_BASE}/${model_dir}/${model}-${op}.json\"\n\n    cat > \"$out/bin/${script_name}\" << SCRIPT_EOF\n#!/usr/bin/env bash\n# ${script_name} - Submit ${op} workflow for ${model}\nset -euo pipefail\n\nWORKFLOW=\"${workflow_path}\"\n\nif [ ! -f \"\\$WORKFLOW\" ]; then\n  echo \"Error: Workflow not found: \\$WORKFLOW\" >&2\n  echo \"Make sure ComfyUI is installed with workflows.\" >&2\n  exit 1\nfi\n\nexec comfyui-submit \"\\$WORKFLOW\" --wait \"\\$@\"\nSCRIPT_EOF\n    chmod +x \"$out/bin/${script_name}\"\n  done\ndone\n\necho \"Built scripts: sd15-txt2img sd15-img2img sd15-upscale sdxl-txt2img sdxl-img2img sdxl-upscale sd35-txt2img sd35-img2img sd35-upscale flux-txt2img flux-img2img flux-upscale\"\n",
+        "command": "mkdir -p $out/bin\n\nWORKFLOWS_BASE=\"/home/daedalus/comfyui-work/user/default/workflows\"\n\n# Define models and their workflow directories (uppercase)\ndeclare -A MODEL_DIRS=(\n  [\"sd15\"]=\"SD15\"\n  [\"sdxl\"]=\"SDXL\"\n  [\"sd35\"]=\"SD35\"\n  [\"flux\"]=\"FLUX\"\n)\n\n# Generate scripts for each model and operation\nfor model in sd15 sdxl sd35 flux; do\n  model_dir=\"${MODEL_DIRS[$model]}\"\n\n  for op in txt2img img2img upscale; do\n    script_name=\"${model}-${op}\"\n    workflow_path=\"${WORKFLOWS_BASE}/${model_dir}/${model}-${op}.json\"\n\n    cat > \"$out/bin/${script_name}\" << SCRIPT_EOF\n#!/usr/bin/env bash\n# ${script_name} - Submit ${op} workflow for ${model}\nset -euo pipefail\n\nWORKFLOW=\"${workflow_path}\"\n\nif [ ! -f \"\\$WORKFLOW\" ]; then\n  echo \"Error: Workflow not found: \\$WORKFLOW\" >&2\n  echo \"Make sure ComfyUI is installed with workflows.\" >&2\n  exit 1\nfi\n\nexec comfyui-submit \"\\$WORKFLOW\" --wait \"\\$@\"\nSCRIPT_EOF\n    chmod +x \"$out/bin/${script_name}\"\n  done\ndone\n\necho \"Built scripts: sd15-txt2img sd15-img2img sd15-upscale sdxl-txt2img sdxl-img2img sdxl-upscale sd35-txt2img sd35-img2img sd35-upscale flux-txt2img flux-img2img flux-upscale\"\n",
         "sandbox": "off",
         "version": "0.1.0",
         "description": "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)"
