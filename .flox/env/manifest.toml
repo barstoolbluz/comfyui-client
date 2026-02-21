@@ -19,20 +19,17 @@ fi
 
 # Setup Python venv in cache
 VENV="$FLOX_ENV_CACHE/venv"
-FLOX_PYTHON=$(which python)
 if [ ! -d "$VENV" ]; then
-  uv venv "$VENV" --python "$FLOX_PYTHON"
+  uv venv "$VENV" --python "$(which python)"
 fi
 
 unset PYTHONPATH
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 source "$VENV/bin/activate"
 
-# Reinstall if source changed or CLI missing
-if [ ! -f "$VENV/.deps_installed" ] || [ ! -f "$VENV/bin/comfyui-queue" ] || \
-   [ "$FLOX_ENV_PROJECT/src/comfyui_client/cli.py" -nt "$VENV/.deps_installed" ]; then
-  uv pip install -e "$FLOX_ENV_PROJECT[dev]" --quiet
-  touch "$VENV/.deps_installed"
+# Install Python CLI from package if not present
+if [ ! -f "$VENV/bin/comfyui-submit" ]; then
+  comfyui-client-setup "$VENV"
 fi
 '''
 

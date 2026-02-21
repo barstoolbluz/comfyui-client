@@ -19,13 +19,13 @@
       "COMFYUI_WORKFLOWS": "/home/daedalus/comfyui-work/user/default/workflows"
     },
     "hook": {
-      "on-activate": "# Create workflows symlink if target exists\nif [ -d \"$COMFYUI_WORKFLOWS\" ] && [ ! -e \"workflows\" ]; then\n  ln -s \"$COMFYUI_WORKFLOWS\" workflows\nfi\n\n# Setup Python venv\nFLOX_PYTHON=$(which python)\nif [ ! -d \".venv\" ]; then\n  uv venv .venv --python \"$FLOX_PYTHON\"\nfi\n\nunset PYTHONPATH\nsource .venv/bin/activate\n\nif [ ! -f \".venv/.deps_installed\" ] || [ ! -f \".venv/bin/comfyui-queue\" ]; then\n  uv pip install -e \".[dev]\"\n  touch .venv/.deps_installed\nfi\n"
+      "on-activate": "# Create workflows symlink if target exists\nif [ -d \"$COMFYUI_WORKFLOWS\" ] && [ ! -e \"workflows\" ]; then\n  ln -s \"$COMFYUI_WORKFLOWS\" workflows\nfi\n\n# Setup Python venv in cache\nVENV=\"$FLOX_ENV_CACHE/venv\"\nif [ ! -d \"$VENV\" ]; then\n  uv venv \"$VENV\" --python \"$(which python)\"\nfi\n\nunset PYTHONPATH\nexport VIRTUAL_ENV_DISABLE_PROMPT=1\nsource \"$VENV/bin/activate\"\n\n# Install Python CLI from package if not present\nif [ ! -f \"$VENV/bin/comfyui-submit\" ]; then\n  comfyui-client-setup \"$VENV\"\nfi\n"
     },
     "profile": {
-      "common": "export PATH=\"$FLOX_ENV_PROJECT/.venv/bin:$PATH\"\n",
-      "bash": "unset PYTHONPATH\nsource \"$FLOX_ENV_PROJECT/.venv/bin/activate\" 2>/dev/null || true\n",
-      "zsh": "unset PYTHONPATH\nsource \"$FLOX_ENV_PROJECT/.venv/bin/activate\" 2>/dev/null || true\n",
-      "fish": "set -e PYTHONPATH 2>/dev/null\nif test -f \"$FLOX_ENV_PROJECT/.venv/bin/activate.fish\"\n    source \"$FLOX_ENV_PROJECT/.venv/bin/activate.fish\"\nend\n"
+      "common": "export PATH=\"$FLOX_ENV_CACHE/venv/bin:$PATH\"\nexport VIRTUAL_ENV_DISABLE_PROMPT=1\n",
+      "bash": "unset PYTHONPATH\n",
+      "zsh": "unset PYTHONPATH\n",
+      "fish": "set -e PYTHONPATH 2>/dev/null\n"
     },
     "options": {}
   },
