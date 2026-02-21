@@ -3,6 +3,9 @@
   "manifest": {
     "version": 1,
     "install": {
+      "comfyui-scripts": {
+        "pkg-path": "flox/comfyui-scripts"
+      },
       "python": {
         "pkg-path": "python313"
       },
@@ -27,6 +30,118 @@
     "options": {}
   },
   "packages": [
+    {
+      "attr_path": "comfyui-scripts",
+      "broken": false,
+      "derivation": "/nix/store/zl7abl387zq0g7kd97jnzmyk3mynx2lk-comfyui-scripts.drv",
+      "description": "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)",
+      "install_id": "comfyui-scripts",
+      "locked_url": "git@github.com:barstoolbluz/comfyui-client.git?rev=6a5b5d2938a4bef2c81bec251ce54f6960a54318",
+      "name": "comfyui-scripts",
+      "pname": "comfyui-scripts",
+      "rev": "6a5b5d2938a4bef2c81bec251ce54f6960a54318",
+      "rev_count": 10,
+      "rev_date": "2026-02-21T02:47:54Z",
+      "scrape_date": "2026-02-21T02:55:02.726803944Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "unknown",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/5yhava8ncln718an2r3n410940fqjw0p-comfyui-scripts"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "comfyui-scripts",
+      "broken": false,
+      "derivation": "/nix/store/mfazy9f1nbj789y68bab3j4c42w04am4-comfyui-scripts.drv",
+      "description": "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)",
+      "install_id": "comfyui-scripts",
+      "locked_url": "git@github.com:barstoolbluz/comfyui-client.git?rev=6a5b5d2938a4bef2c81bec251ce54f6960a54318",
+      "name": "comfyui-scripts",
+      "pname": "comfyui-scripts",
+      "rev": "6a5b5d2938a4bef2c81bec251ce54f6960a54318",
+      "rev_count": 10,
+      "rev_date": "2026-02-21T02:47:54Z",
+      "scrape_date": "2026-02-21T02:55:02.726810501Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "unknown",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/a9a3p3j1fvcd9j69brcjygjfdxs5rvbq-comfyui-scripts"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "comfyui-scripts",
+      "broken": false,
+      "derivation": "/nix/store/xwhhh5nnby3anplfmqqsaf3q5q3a3m86-comfyui-scripts.drv",
+      "description": "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)",
+      "install_id": "comfyui-scripts",
+      "locked_url": "git@github.com:barstoolbluz/comfyui-client.git?rev=6a5b5d2938a4bef2c81bec251ce54f6960a54318",
+      "name": "comfyui-scripts",
+      "pname": "comfyui-scripts",
+      "rev": "6a5b5d2938a4bef2c81bec251ce54f6960a54318",
+      "rev_count": 10,
+      "rev_date": "2026-02-21T02:47:54Z",
+      "scrape_date": "2026-02-21T02:55:02.726811832Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "unknown",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/8iljfm8vfh8nyw9g8zh9p6q0ik8qr1k8-comfyui-scripts"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "comfyui-scripts",
+      "broken": false,
+      "derivation": "/nix/store/f9qjvvqd82sinhaq1nsyzbkbsa11ncqs-comfyui-scripts.drv",
+      "description": "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)",
+      "install_id": "comfyui-scripts",
+      "locked_url": "https://github.com/barstoolbluz/comfyui-client.git?rev=6a5b5d2938a4bef2c81bec251ce54f6960a54318",
+      "name": "comfyui-scripts",
+      "pname": "comfyui-scripts",
+      "rev": "6a5b5d2938a4bef2c81bec251ce54f6960a54318",
+      "rev_count": 10,
+      "rev_date": "2026-02-21T02:47:54Z",
+      "scrape_date": "2026-02-21T02:55:02.726812978Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "unknown",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/sifi8x3nb2g9d5814bgkd4a4xh7b1jrg-comfyui-scripts"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
     {
       "attr_path": "python313",
       "broken": false,
