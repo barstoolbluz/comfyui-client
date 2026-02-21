@@ -24,10 +24,13 @@ if [ ! -d ".venv" ]; then
 fi
 
 unset PYTHONPATH
+export VIRTUAL_ENV_DISABLE_PROMPT=1
 source .venv/bin/activate
 
-if [ ! -f ".venv/.deps_installed" ] || [ ! -f ".venv/bin/comfyui-queue" ]; then
-  uv pip install -e ".[dev]"
+# Reinstall if source changed or CLI missing
+if [ ! -f ".venv/.deps_installed" ] || [ ! -f ".venv/bin/comfyui-queue" ] || \
+   [ "src/comfyui_client/cli.py" -nt ".venv/.deps_installed" ]; then
+  uv pip install -e ".[dev]" --quiet
   touch .venv/.deps_installed
 fi
 '''
@@ -35,21 +38,17 @@ fi
 [profile]
 common = '''
 export PATH="$FLOX_ENV_PROJECT/.venv/bin:$PATH"
+export VIRTUAL_ENV_DISABLE_PROMPT=1
 '''
 
 bash = '''
 unset PYTHONPATH
-source "$FLOX_ENV_PROJECT/.venv/bin/activate" 2>/dev/null || true
 '''
 
 zsh = '''
 unset PYTHONPATH
-source "$FLOX_ENV_PROJECT/.venv/bin/activate" 2>/dev/null || true
 '''
 
 fish = '''
 set -e PYTHONPATH 2>/dev/null
-if test -f "$FLOX_ENV_PROJECT/.venv/bin/activate.fish"
-    source "$FLOX_ENV_PROJECT/.venv/bin/activate.fish"
-end
 '''
