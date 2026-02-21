@@ -558,32 +558,72 @@ let
       .TP
       .B COMFYUI_PORT
       Port of the ComfyUI server. Default: 8188
-      .SH EXAMPLES
-      Submit a workflow and wait for completion:
+      .SH REMOTE OPERATION
+      This command communicates with ComfyUI entirely over HTTP. When using
+      \fB\-\-output\fR, generated images are downloaded from the server via the
+      ComfyUI \fB/view\fR endpoint. No filesystem access to the ComfyUI server
+      is required.
+      .PP
+      This means you can run the client on a separate machine from ComfyUI:
       .PP
       .RS
       .nf
-      comfyui-submit workflow.json --wait
+      COMFYUI_HOST=gpu-server.local comfyui-submit workflow.json \\
+          --wait -o ./local-output
       .fi
       .RE
       .PP
-      Generate an image with a custom prompt and seed:
+      The workflow executes on the remote server, and the resulting images are
+      transferred to your local \fB./local-output\fR directory over HTTP.
+      .SH EXAMPLES
+      Submit a workflow and download results:
+      .PP
+      .RS
+      .nf
+      comfyui-submit workflow.json --wait -o ./output
+      .fi
+      .RE
+      .PP
+      Generate with custom prompt, seed, and dimensions:
       .PP
       .RS
       .nf
       comfyui-submit workflow.json \\
           -p "a serene mountain landscape at sunset" \\
           -n "blurry, low quality" \\
-          -s 42 --wait -o ./output
+          -s 42 -W 1024 -H 768 --wait -o ./output
       .fi
       .RE
       .PP
-      Img2img with custom denoise strength:
+      Img2img with input image and denoise strength:
       .PP
       .RS
       .nf
       comfyui-submit img2img.json \\
-          -i input.png -d 0.6 --wait
+          -i input.png -d 0.6 --wait -o ./output
+      .fi
+      .RE
+      .PP
+      Fine-tune sampling parameters:
+      .PP
+      .RS
+      .nf
+      comfyui-submit workflow.json \\
+          -p "detailed portrait" --steps 30 --cfg 7.5 \\
+          --sampler dpmpp_2m --scheduler karras \\
+          --wait -o ./output
+      .fi
+      .RE
+      .PP
+      Submit without waiting (async), retrieve later:
+      .PP
+      .RS
+      .nf
+      comfyui-submit workflow.json -p "async job"
+      # Outputs: Submitted: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+      # Later, retrieve results:
+      comfyui-result a1b2c3d4-e5f6-7890-abcd-ef1234567890 -o ./output
       .fi
       .RE
       .SH SEE ALSO
@@ -679,12 +719,17 @@ let
       .TP
       .B COMFYUI_PORT
       Port of the ComfyUI server. Default: 8188
+      .SH REMOTE OPERATION
+      Images are downloaded from the ComfyUI server via the \fB/view\fR HTTP
+      endpoint. No filesystem access to the server is required. See
+      .BR comfyui-submit (1)
+      for details.
       .SH EXAMPLES
       Download results to current directory:
       .PP
       .RS
       .nf
-      comfyui-result abc12345-6789-...
+      comfyui-result a1b2c3d4-e5f6-7890-abcd-ef1234567890
       .fi
       .RE
       .PP
@@ -692,7 +737,16 @@ let
       .PP
       .RS
       .nf
-      comfyui-result abc12345-6789-... -o ./images
+      comfyui-result a1b2c3d4-e5f6-7890-abcd-ef1234567890 -o ./images
+      .fi
+      .RE
+      .PP
+      Retrieve from a remote server:
+      .PP
+      .RS
+      .nf
+      COMFYUI_HOST=gpu-server.local \\
+          comfyui-result a1b2c3d4-e5f6-7890-abcd-ef1234567890 -o ./images
       .fi
       .RE
       .SH EXIT STATUS
@@ -807,6 +861,15 @@ let
       .TP
       .B COMFYUI_WORKFLOWS
       Base directory containing workflow files. Default: $HOME/comfyui-work/user/default/workflows
+      .SH REMOTE OPERATION
+      All commands communicate with ComfyUI over HTTP. The client can run on a
+      different machine from the ComfyUI server. When downloading images with
+      the \fB\-o\fR option, images are fetched via the ComfyUI \fB/view\fR
+      endpoint and saved locally. No filesystem access to the server is required.
+      .PP
+      This architecture supports using ComfyUI as a remote image generation
+      service, where the GPU server runs ComfyUI and clients submit workflows
+      from separate machines.
       .SH EXAMPLES
       Generate an image with SDXL:
       .PP
@@ -816,19 +879,37 @@ let
       .fi
       .RE
       .PP
+      Img2img with SD 1.5 (modify existing image):
+      .PP
+      .RS
+      .nf
+      sd15-img2img -i photo.png -p "oil painting style" -d 0.5 -o ./output
+      .fi
+      .RE
+      .PP
       Upscale an image with FLUX:
       .PP
       .RS
       .nf
-      flux-upscale -i input.png -d 0.4 -o ./upscaled
+      flux-upscale -i lowres.png -o ./upscaled
       .fi
       .RE
       .PP
-      Submit a custom workflow to a remote server:
+      Generate on a remote GPU server:
       .PP
       .RS
       .nf
-      COMFYUI_HOST=gpu-server.local comfyui-submit custom.json --wait
+      COMFYUI_HOST=gpu-server.local \\
+          sdxl-txt2img -p "portrait photo" -s 12345 -o ./output
+      .fi
+      .RE
+      .PP
+      Use a custom workflow directly:
+      .PP
+      .RS
+      .nf
+      comfyui-submit ~/workflows/custom.json \\
+          -p "my prompt" --wait -o ./output
       .fi
       .RE
       .SH SEE ALSO
