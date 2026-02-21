@@ -74,6 +74,7 @@ let
       from .client import ComfyUIClient
       from .workflow import (
           load_workflow,
+          clean_workflow,
           set_prompt,
           set_seed,
           set_steps,
@@ -88,6 +89,7 @@ let
       __all__ = [
           "ComfyUIClient",
           "load_workflow",
+          "clean_workflow",
           "set_prompt",
           "set_seed",
           "set_steps",
@@ -174,9 +176,19 @@ let
       from pathlib import Path
 
 
+      def clean_workflow(workflow: dict) -> dict:
+          """Remove non-node entries from workflow (last_node_id, last_link_id, etc.)"""
+          return {
+              node_id: node
+              for node_id, node in workflow.items()
+              if isinstance(node, dict) and "class_type" in node
+          }
+
+
       def load_workflow(path: Path) -> dict:
-          """Load workflow JSON file"""
-          return json.loads(path.read_text())
+          """Load workflow JSON file and clean it for API submission"""
+          workflow = json.loads(path.read_text())
+          return clean_workflow(workflow)
 
 
       def find_node_by_class(workflow: dict, class_type: str) -> tuple[str, dict] | None:
