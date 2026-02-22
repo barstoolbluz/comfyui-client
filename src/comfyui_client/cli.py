@@ -76,8 +76,18 @@ def submit(
 
     if wait:
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
-            progress.add_task("Waiting for completion...", total=None)
-            result = client.wait_for_completion(prompt_id)
+            task = progress.add_task("Queued...", total=None)
+
+            def on_progress(msg_type, data):
+                if msg_type == "executing" and data.get("node"):
+                    progress.update(task, description=f"Executing node {data['node']}...")
+                elif msg_type == "progress":
+                    val = data.get("value", 0)
+                    mx = data.get("max", 0)
+                    if mx > 0:
+                        progress.update(task, description=f"Sampling step {val}/{mx}...")
+
+            result = client.wait_for_completion(prompt_id, on_progress=on_progress)
 
         # Download images if output specified
         if output and "outputs" in result:

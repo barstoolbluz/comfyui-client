@@ -101,14 +101,24 @@ let
     name = "client.py";
     text = ''
       """ComfyUI API Client"""
+      import asyncio
+      import json
+
       import httpx
       import uuid
+      import websockets
 
 
       class ComfyUIClient:
           def __init__(self, host: str = "localhost", port: int = 8188):
+              self.host = host
+              self.port = port
               self.base_url = f"http://{host}:{port}"
               self.client_id = str(uuid.uuid4())
+
+          @property
+          def ws_url(self) -> str:
+              return f"ws://{self.host}:{self.port}/ws?clientId={self.client_id}"
 
           def submit(self, workflow: dict) -> str:
               """Submit workflow, return prompt_id"""
@@ -149,16 +159,36 @@ let
               response.raise_for_status()
               return response.content
 
-          def wait_for_completion(self, prompt_id: str, timeout: float = 300) -> dict:
-              """Poll until workflow completes"""
-              import time
-              start = time.time()
-              while time.time() - start < timeout:
-                  history = self.get_history(prompt_id)
-                  if prompt_id in history:
-                      return history[prompt_id]
-                  time.sleep(1)
-              raise TimeoutError(f"Workflow {prompt_id} did not complete in {timeout}s")
+          async def _ws_wait(self, prompt_id: str, on_progress=None) -> dict:
+              """Listen on WebSocket until workflow completes"""
+              async with websockets.connect(self.ws_url, max_size=2**24) as ws:
+                  while True:
+                      raw = await asyncio.wait_for(ws.recv(), timeout=1800)
+                      if isinstance(raw, bytes):
+                          continue
+                      msg = json.loads(raw)
+                      msg_type = msg.get("type")
+                      data = msg.get("data", {})
+
+                      if data.get("prompt_id") != prompt_id:
+                          continue
+
+                      if on_progress:
+                          on_progress(msg_type, data)
+
+                      if msg_type == "executing" and data.get("node") is None:
+                          break
+                      elif msg_type == "execution_error":
+                          raise RuntimeError(
+                              f"Workflow error: {data.get('exception_message', 'unknown')}"
+                          )
+
+              history = self.get_history(prompt_id)
+              return history[prompt_id]
+
+          def wait_for_completion(self, prompt_id: str, on_progress=None) -> dict:
+              """Wait for workflow completion via WebSocket"""
+              return asyncio.run(self._ws_wait(prompt_id, on_progress))
     '';
   };
 
@@ -395,8 +425,18 @@ let
 
           if wait:
               with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
-                  progress.add_task("Waiting for completion...", total=None)
-                  result = client.wait_for_completion(prompt_id)
+                  task = progress.add_task("Queued...", total=None)
+
+                  def on_progress(msg_type, data):
+                      if msg_type == "executing" and data.get("node"):
+                          progress.update(task, description=f"Executing node {data['node']}...")
+                      elif msg_type == "progress":
+                          val = data.get("value", 0)
+                          mx = data.get("max", 0)
+                          if mx > 0:
+                              progress.update(task, description=f"Sampling step {val}/{mx}...")
+
+                  result = client.wait_for_completion(prompt_id, on_progress=on_progress)
 
               # Download images if output specified
               if output and "outputs" in result:
@@ -545,8 +585,10 @@ let
       LoadImage nodes.
       .TP
       .BR \-w ", " \-\-wait
-      Wait for the workflow to complete before exiting. Without this flag, the
-      command exits immediately after submission.
+      Wait for the workflow to complete before exiting. Uses a WebSocket connection
+      to monitor execution progress in real time, showing which node is running
+      and sampling step counts. Without this flag, the command exits immediately
+      after submission.
       .TP
       .BR \-o ", " \-\-output " " \fIDIR\fR
       Output directory for downloading generated images. Only effective when used
@@ -559,7 +601,8 @@ let
       .B COMFYUI_PORT
       Port of the ComfyUI server. Default: 8188
       .SH REMOTE OPERATION
-      This command communicates with ComfyUI entirely over HTTP. When using
+      This command uses HTTP for workflow submission and image retrieval, and
+      WebSocket for real-time completion monitoring (with \fB\-\-wait\fR). When using
       \fB\-\-output\fR, generated images are downloaded from the server via the
       ComfyUI \fB/view\fR endpoint. No filesystem access to the ComfyUI server
       is required.
@@ -862,10 +905,12 @@ let
       .B COMFYUI_WORKFLOWS
       Base directory containing workflow files. Default: $HOME/comfyui-work/user/default/workflows
       .SH REMOTE OPERATION
-      All commands communicate with ComfyUI over HTTP. The client can run on a
-      different machine from the ComfyUI server. When downloading images with
-      the \fB\-o\fR option, images are fetched via the ComfyUI \fB/view\fR
-      endpoint and saved locally. No filesystem access to the server is required.
+      Commands use HTTP for workflow submission, queue queries, and image retrieval.
+      The \fB\-\-wait\fR flag uses a WebSocket connection for real-time progress
+      monitoring. The client can run on a different machine from the ComfyUI server.
+      When downloading images with the \fB\-o\fR option, images are fetched via the
+      ComfyUI \fB/view\fR endpoint and saved locally. No filesystem access to the
+      server is required.
       .PP
       This architecture supports using ComfyUI as a remote image generation
       service, where the GPU server runs ComfyUI and clients submit workflows
