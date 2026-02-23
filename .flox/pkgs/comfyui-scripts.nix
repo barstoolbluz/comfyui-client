@@ -658,6 +658,16 @@ let
     cp ${clientPy} $out/share/comfyui-client/src/comfyui_client/client.py
     cp ${workflowPy} $out/share/comfyui-client/src/comfyui_client/workflow.py
     cp ${cliPy} $out/share/comfyui-client/src/comfyui_client/cli.py
+
+    cat > $out/share/comfyui-client/.flox-build-v1 << 'FLOX_BUILD'
+    FLOX_BUILD_RUNTIME_VERSION=1
+    description: Initial build recipe version marker
+    date: 2026-02-23
+    change:
+      Bundle 16 workflow JSON files (4 models x 4 ops) into Nix store.
+      Add inpaint operation. Fix cached prompt race condition in WS wait.
+      Wrapper scripts default to $FLOX_ENV/share/comfyui-client/workflows.
+    FLOX_BUILD
   '';
 
   # Man pages
@@ -1280,6 +1290,15 @@ let
     text = ''
       VENV="''${1:-$FLOX_ENV_CACHE/venv}"
       SOURCE_DIR="''${FLOX_ENV}/share/comfyui-client"
+
+      # Print build recipe version marker
+      flox_build_marker=$(find "$SOURCE_DIR" -maxdepth 1 -name '.flox-build-v*' -print -quit)
+      if [ -n "$flox_build_marker" ]; then
+        echo "=============================================="
+        echo "FLOX_BUILD_RUNTIME_VERSION: $(basename "$flox_build_marker" | sed 's/.flox-build-v//')"
+        echo "Source: $SOURCE_DIR"
+        echo "=============================================="
+      fi
 
       if [ ! -d "$VENV" ]; then
         echo "Error: venv not found at $VENV" >&2
