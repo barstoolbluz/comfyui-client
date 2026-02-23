@@ -164,6 +164,11 @@ let
 
           async def _ws_wait(self, prompt_id: str, on_progress=None) -> dict:
               """Listen on WebSocket until workflow completes"""
+              # Fast path: if already completed (cached/instant execution), return now
+              history = self.get_history(prompt_id)
+              if prompt_id in history:
+                  return history[prompt_id]
+
               async with websockets.connect(self.ws_url, max_size=2**24) as ws:
                   while True:
                       raw = await asyncio.wait_for(ws.recv(), timeout=1800)
