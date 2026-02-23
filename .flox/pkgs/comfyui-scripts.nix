@@ -4,7 +4,7 @@ let
   # Model types for workflow scripts
   models = [ "sd15" "sdxl" "sd35" "flux" ];
 
-  operations = [ "txt2img" "img2img" "upscale" ];
+  operations = [ "txt2img" "img2img" "upscale" "inpaint" ];
 
   # Generate a single workflow wrapper script
   makeScript = model: op:
@@ -14,7 +14,7 @@ let
     writeShellApplication {
       inherit name;
       text = ''
-        WORKFLOWS_BASE="''${COMFYUI_WORKFLOWS:-$HOME/comfyui-work/user/default/workflows}"
+        WORKFLOWS_BASE="''${COMFYUI_WORKFLOWS:-''${FLOX_ENV}/share/comfyui-client/workflows}"
         WORKFLOW="$WORKFLOWS_BASE/api/${model}/${model}-${op}.json"
 
         if [ ! -f "$WORKFLOW" ]; then
@@ -1012,6 +1012,9 @@ let
       .TP
       .B sd15-upscale
       Upscaling using SD 1.5
+      .TP
+      .B sd15-inpaint
+      Inpainting using SD 1.5
       .SS Stable Diffusion XL
       .TP
       .B sdxl-txt2img
@@ -1022,6 +1025,9 @@ let
       .TP
       .B sdxl-upscale
       Upscaling using SDXL
+      .TP
+      .B sdxl-inpaint
+      Inpainting using SDXL
       .SS Stable Diffusion 3.5
       .TP
       .B sd35-txt2img
@@ -1032,6 +1038,9 @@ let
       .TP
       .B sd35-upscale
       Upscaling using SD 3.5
+      .TP
+      .B sd35-inpaint
+      Inpainting using SD 3.5
       .SS FLUX
       .TP
       .B flux-txt2img
@@ -1042,12 +1051,16 @@ let
       .TP
       .B flux-upscale
       Upscaling using FLUX
+      .TP
+      .B flux-inpaint
+      Inpainting using FLUX
       .SH WORKFLOW FILES
-      Wrapper scripts look for workflow files in a standard location:
+      The package bundles workflow JSON files for all 16 model/operation combinations.
+      Wrapper scripts find them automatically at:
       .PP
       .RS
       .nf
-      $COMFYUI_WORKFLOWS/api/<model>/<model>-<operation>.json
+      $FLOX_ENV/share/comfyui-client/workflows/api/<model>/<model>-<operation>.json
       .fi
       .RE
       .PP
@@ -1057,9 +1070,12 @@ let
       .PP
       .RS
       .nf
-      $COMFYUI_WORKFLOWS/api/sdxl/sdxl-txt2img.json
+      $FLOX_ENV/share/comfyui-client/workflows/api/sdxl/sdxl-txt2img.json
       .fi
       .RE
+      .PP
+      To use custom workflows instead, set \fBCOMFYUI_WORKFLOWS\fR to a directory
+      containing your own workflow tree. This overrides the bundled workflows.
       .PP
       Workflow files must be in ComfyUI API format (exported via "Save (API Format)"
       in the ComfyUI web interface or converted from standard format).
@@ -1072,7 +1088,8 @@ let
       Port of the ComfyUI server. Default: 8188
       .TP
       .B COMFYUI_WORKFLOWS
-      Base directory containing workflow files. Default: $HOME/comfyui-work/user/default/workflows
+      Base directory containing workflow files. Overrides the bundled workflows.
+      Default: $FLOX_ENV/share/comfyui-client/workflows
       .SH REMOTE OPERATION
       Commands use HTTP for workflow submission, queue queries, and image retrieval.
       The \fB\-\-wait\fR flag uses a WebSocket connection for real-time progress
@@ -1236,6 +1253,12 @@ let
     '';
   };
 
+  # Bundle workflow files
+  workflowFiles = runCommand "comfyui-workflows" {} ''
+    mkdir -p $out/share/comfyui-client/workflows/api
+    cp -r ${./../../workflows/api}/* $out/share/comfyui-client/workflows/api/
+  '';
+
   # Bundle man pages
   manPages = runCommand "comfyui-client-man" {} ''
     mkdir -p $out/share/man/man1 $out/share/man/man7
@@ -1275,7 +1298,7 @@ let
 in
 symlinkJoin {
   name = "comfyui-scripts";
-  paths = allScripts ++ [ pythonSource setupScript manPages ];
+  paths = allScripts ++ [ pythonSource setupScript manPages workflowFiles ];
   meta = {
     description = "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)";
   };

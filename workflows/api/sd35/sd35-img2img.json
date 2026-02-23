@@ -1,0 +1,138 @@
+{
+  "1": {
+    "inputs": {
+      "ckpt_name": "sd3.5_large.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load SD3.5 Checkpoint"
+    }
+  },
+  "2": {
+    "inputs": {
+      "clip_name1": "clip_l.safetensors",
+      "clip_name2": "clip_g.safetensors",
+      "clip_name3": "t5xxl_fp16.safetensors"
+    },
+    "class_type": "TripleCLIPLoader",
+    "_meta": {
+      "title": "Triple CLIP Loader"
+    }
+  },
+  "3": {
+    "inputs": {
+      "clip_l": "a photograph of a mountain landscape at sunset",
+      "clip_g": "a photograph of a mountain landscape at sunset, detailed, high quality",
+      "t5xxl": "a photograph of a mountain landscape at sunset, detailed, high quality, professional photography",
+      "empty_padding": "none",
+      "clip": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncodeSD3",
+    "_meta": {
+      "title": "Positive Prompt (SD3)"
+    }
+  },
+  "4": {
+    "inputs": {
+      "clip_l": "blurry, low quality",
+      "clip_g": "blurry, low quality, distorted",
+      "t5xxl": "",
+      "empty_padding": "none",
+      "clip": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncodeSD3",
+    "_meta": {
+      "title": "Negative Prompt (SD3)"
+    }
+  },
+  "5": {
+    "inputs": {
+      "image": "input.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Input Image"
+    }
+  },
+  "6": {
+    "inputs": {
+      "pixels": [
+        "5",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "7": {
+    "inputs": {
+      "seed": 42,
+      "steps": 28,
+      "cfg": 4.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.75,
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "3",
+        0
+      ],
+      "negative": [
+        "4",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "SD35_img2img",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  }
+}
