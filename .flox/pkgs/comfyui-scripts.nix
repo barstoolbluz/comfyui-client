@@ -1031,7 +1031,7 @@ let
   manSubmit = writeTextFile {
     name = "comfyui-submit.1";
     text = ''
-      .TH COMFYUI-SUBMIT 1 "2026-02-21" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-SUBMIT 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-submit \- submit a workflow to ComfyUI
       .SH SYNOPSIS
@@ -1214,6 +1214,10 @@ let
       .BR comfyui-queue (1),
       .BR comfyui-result (1),
       .BR comfyui-batch (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1),
       .BR comfyui-client (7)
     '';
   };
@@ -1221,7 +1225,7 @@ let
   manQueue = writeTextFile {
     name = "comfyui-queue.1";
     text = ''
-      .TH COMFYUI-QUEUE 1 "2026-02-21" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-QUEUE 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-queue \- show ComfyUI queue status
       .SH SYNOPSIS
@@ -1268,6 +1272,11 @@ let
       .SH SEE ALSO
       .BR comfyui-submit (1),
       .BR comfyui-result (1),
+      .BR comfyui-batch (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1),
       .BR comfyui-client (7)
     '';
   };
@@ -1275,7 +1284,7 @@ let
   manResult = writeTextFile {
     name = "comfyui-result.1";
     text = ''
-      .TH COMFYUI-RESULT 1 "2026-02-21" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-RESULT 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-result \- retrieve results from a ComfyUI workflow
       .SH SYNOPSIS
@@ -1344,6 +1353,11 @@ let
       .SH SEE ALSO
       .BR comfyui-submit (1),
       .BR comfyui-queue (1),
+      .BR comfyui-batch (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1),
       .BR comfyui-client (7)
     '';
   };
@@ -1351,7 +1365,7 @@ let
   manOverview = writeTextFile {
     name = "comfyui-client.7";
     text = ''
-      .TH COMFYUI-CLIENT 7 "2026-02-21" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CLIENT 7 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-client \- command-line interface for ComfyUI
       .SH DESCRIPTION
@@ -1547,7 +1561,7 @@ let
   manBatch = writeTextFile {
     name = "comfyui-batch.1";
     text = ''
-      .TH COMFYUI-BATCH 1 "2026-02-22" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-BATCH 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-batch \- run multiple ComfyUI jobs from a batch file
       .SH SYNOPSIS
@@ -1645,6 +1659,10 @@ let
       .BR comfyui-submit (1),
       .BR comfyui-queue (1),
       .BR comfyui-result (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1),
       .BR comfyui-client (7)
     '';
   };
@@ -1652,7 +1670,7 @@ let
   manStatus = writeTextFile {
     name = "comfyui-status.1";
     text = ''
-      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-status \- show ComfyUI server status and system info
       .SH SYNOPSIS
@@ -1685,7 +1703,13 @@ let
       .fi
       .RE
       .SH SEE ALSO
+      .BR comfyui-submit (1),
       .BR comfyui-queue (1),
+      .BR comfyui-result (1),
+      .BR comfyui-batch (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1),
       .BR comfyui-client (7)
     '';
   };
@@ -1693,7 +1717,7 @@ let
   manModels = writeTextFile {
     name = "comfyui-models.1";
     text = ''
-      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-models \- list available ComfyUI models
       .SH SYNOPSIS
@@ -1742,6 +1766,12 @@ let
       .RE
       .SH SEE ALSO
       .BR comfyui-submit (1),
+      .BR comfyui-queue (1),
+      .BR comfyui-result (1),
+      .BR comfyui-batch (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-info (1),
       .BR comfyui-client (7)
     '';
   };
@@ -1749,7 +1779,7 @@ let
   manInfo = writeTextFile {
     name = "comfyui-info.1";
     text = ''
-      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-info \- display generation metadata from ComfyUI PNG images
       .SH SYNOPSIS
@@ -1814,6 +1844,12 @@ let
       .RE
       .SH SEE ALSO
       .BR comfyui-submit (1),
+      .BR comfyui-queue (1),
+      .BR comfyui-result (1),
+      .BR comfyui-batch (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
       .BR comfyui-client (7)
     '';
   };
@@ -1821,7 +1857,7 @@ let
   manCancel = writeTextFile {
     name = "comfyui-cancel.1";
     text = ''
-      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-cancel \- cancel running or pending ComfyUI jobs
       .SH SYNOPSIS
@@ -1885,6 +1921,11 @@ let
       .SH SEE ALSO
       .BR comfyui-submit (1),
       .BR comfyui-queue (1),
+      .BR comfyui-result (1),
+      .BR comfyui-batch (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1),
       .BR comfyui-client (7)
     '';
   };
@@ -2094,7 +2135,7 @@ let
 
 in
 symlinkJoin {
-  name = "comfyui-scripts";
+  name = "comfyui-scripts-0.2.0";
   paths = allScripts ++ [ pythonSource setupScript manPages workflowFiles completionFiles ];
   meta = {
     description = "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)";
