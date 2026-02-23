@@ -55,6 +55,10 @@ let
       comfyui-queue = "comfyui_client.cli:queue_cli"
       comfyui-result = "comfyui_client.cli:result_cli"
       comfyui-batch = "comfyui_client.cli:batch_cli"
+      comfyui-cancel = "comfyui_client.cli:cancel_cli"
+      comfyui-status = "comfyui_client.cli:status_cli"
+      comfyui-models = "comfyui_client.cli:models_cli"
+      comfyui-info = "comfyui_client.cli:info_cli"
 
       [build-system]
       requires = ["hatchling"]
@@ -67,6 +71,7 @@ let
     text = ''
       """ComfyUI API Client"""
       from .client import ComfyUIClient
+      from .metadata import extract_comfyui_metadata, summarize_metadata
       from .workflow import (
           load_workflow,
           clean_workflow,
@@ -84,6 +89,8 @@ let
 
       __all__ = [
           "ComfyUIClient",
+          "extract_comfyui_metadata",
+          "summarize_metadata",
           "load_workflow",
           "clean_workflow",
           "set_prompt",
@@ -150,6 +157,39 @@ let
           def get_queue(self) -> dict:
               """Get current queue status"""
               response = httpx.get(f"{self.base_url}/queue")
+              response.raise_for_status()
+              return response.json()
+
+          def interrupt(self):
+              """Interrupt the currently running workflow"""
+              response = httpx.post(f"{self.base_url}/interrupt", json={})
+              response.raise_for_status()
+
+          def delete_from_queue(self, prompt_ids: list[str]):
+              """Delete specific prompt IDs from the queue"""
+              response = httpx.post(f"{self.base_url}/queue", json={"delete": prompt_ids})
+              response.raise_for_status()
+
+          def clear_queue(self):
+              """Clear all pending items from the queue"""
+              response = httpx.post(f"{self.base_url}/queue", json={"clear": True})
+              response.raise_for_status()
+
+          def get_system_stats(self) -> dict:
+              """Get system stats (versions, RAM, devices)"""
+              response = httpx.get(f"{self.base_url}/system_stats")
+              response.raise_for_status()
+              return response.json()
+
+          def get_model_types(self) -> list[str]:
+              """Get available model folder types"""
+              response = httpx.get(f"{self.base_url}/models")
+              response.raise_for_status()
+              return response.json()
+
+          def get_models(self, folder: str) -> list[str]:
+              """Get models in a specific folder"""
+              response = httpx.get(f"{self.base_url}/models/{folder}")
               response.raise_for_status()
               return response.json()
 
@@ -367,6 +407,144 @@ let
     '';
   };
 
+  metadataPy = writeTextFile {
+    name = "metadata.py";
+    text = ''
+      """PNG metadata extraction for ComfyUI-generated images (stdlib only)"""
+      import json
+      import struct
+      import zlib
+      from pathlib import Path
+
+
+      def read_png_text_chunks(filepath: Path) -> dict[str, str]:
+          """Read tEXt and iTXt chunks from a PNG file.
+
+          PNG chunk format: 4-byte length (big-endian), 4-byte type, data, 4-byte CRC.
+          tEXt chunks contain: keyword\\x00text
+          iTXt chunks contain: keyword\\x00\\x00\\x00\\x00\\x00text (simplified)
+          """
+          chunks = {}
+          with open(filepath, "rb") as f:
+              sig = f.read(8)
+              if sig != b"\x89PNG\r\n\x1a\n":
+                  return chunks
+
+              while True:
+                  header = f.read(8)
+                  if len(header) < 8:
+                      break
+                  length, chunk_type = struct.unpack(">I4s", header)
+                  chunk_data = f.read(length)
+                  f.read(4)  # skip CRC
+
+                  if chunk_type == b"tEXt":
+                      sep = chunk_data.index(b"\x00")
+                      key = chunk_data[:sep].decode("latin-1")
+                      val = chunk_data[sep + 1:].decode("latin-1")
+                      chunks[key] = val
+                  elif chunk_type == b"iTXt":
+                      sep = chunk_data.index(b"\x00")
+                      key = chunk_data[:sep].decode("utf-8")
+                      rest = chunk_data[sep + 1:]
+                      # compression flag, compression method, language tag\0, translated keyword\0
+                      comp_flag = rest[0]
+                      # skip compression method (1 byte)
+                      rest = rest[2:]
+                      lang_end = rest.index(b"\x00")
+                      rest = rest[lang_end + 1:]
+                      trans_end = rest.index(b"\x00")
+                      rest = rest[trans_end + 1:]
+                      if comp_flag:
+                          val = zlib.decompress(rest).decode("utf-8")
+                      else:
+                          val = rest.decode("utf-8")
+                      chunks[key] = val
+                  elif chunk_type == b"IEND":
+                      break
+
+          return chunks
+
+
+      def extract_comfyui_metadata(filepath: Path) -> dict:
+          """Extract ComfyUI metadata from a PNG file.
+
+          ComfyUI stores metadata as tEXt chunks:
+          - 'prompt': API-format nodes JSON
+          - 'workflow': web-UI-format workflow JSON
+          """
+          chunks = read_png_text_chunks(filepath)
+          result = {}
+
+          if "prompt" in chunks:
+              try:
+                  result["prompt"] = json.loads(chunks["prompt"])
+              except json.JSONDecodeError:
+                  result["prompt_raw"] = chunks["prompt"]
+
+          if "workflow" in chunks:
+              try:
+                  result["workflow"] = json.loads(chunks["workflow"])
+              except json.JSONDecodeError:
+                  result["workflow_raw"] = chunks["workflow"]
+
+          return result
+
+
+      def summarize_metadata(metadata: dict) -> dict:
+          """Extract key generation parameters from ComfyUI prompt metadata."""
+          summary = {}
+          prompt = metadata.get("prompt", {})
+
+          for node_id, node in prompt.items():
+              if not isinstance(node, dict):
+                  continue
+              class_type = node.get("class_type", "")
+              inputs = node.get("inputs", {})
+
+              if class_type in ("KSampler", "KSamplerAdvanced", "SamplerCustom"):
+                  if "seed" in inputs:
+                      summary["seed"] = inputs["seed"]
+                  elif "noise_seed" in inputs:
+                      summary["seed"] = inputs["noise_seed"]
+                  if "steps" in inputs:
+                      summary["steps"] = inputs["steps"]
+                  if "cfg" in inputs:
+                      summary["cfg"] = inputs["cfg"]
+                  if "sampler_name" in inputs:
+                      summary["sampler"] = inputs["sampler_name"]
+                  if "scheduler" in inputs:
+                      summary["scheduler"] = inputs["scheduler"]
+                  if "denoise" in inputs:
+                      summary["denoise"] = inputs["denoise"]
+
+              elif class_type == "CLIPTextEncode":
+                  title = node.get("_meta", {}).get("title", "").lower()
+                  text = inputs.get("text", "")
+                  if isinstance(text, str) and text:
+                      if "positive" in title or "prompt" in title:
+                          summary["positive_prompt"] = text
+                      elif "negative" in title:
+                          summary["negative_prompt"] = text
+
+              elif class_type == "EmptyLatentImage":
+                  if "width" in inputs:
+                      summary["width"] = inputs["width"]
+                  if "height" in inputs:
+                      summary["height"] = inputs["height"]
+
+              elif class_type == "CheckpointLoaderSimple":
+                  if "ckpt_name" in inputs:
+                      summary["model"] = inputs["ckpt_name"]
+
+              elif class_type == "UNETLoader":
+                  if "unet_name" in inputs:
+                      summary.setdefault("model", inputs["unet_name"])
+
+          return summary
+    '';
+  };
+
   cliPy = writeTextFile {
     name = "cli.py";
     text = ''
@@ -375,11 +553,14 @@ let
       import typer
       from copy import deepcopy
       from rich.console import Console
+      from rich.panel import Panel
       from rich.progress import Progress, SpinnerColumn, TextColumn
+      from rich.table import Table
       from pathlib import Path
       import os
 
       from .client import ComfyUIClient
+      from .metadata import extract_comfyui_metadata, summarize_metadata
       from .workflow import (
           load_workflow,
           set_prompt,
@@ -429,20 +610,20 @@ let
           return workflow
 
 
-      def _wait_and_download(client, prompt_id, output, label=""):
+      def _wait_and_download(client, prompt_id, output, label="", prefix=None):
           """Wait for completion with progress display, optionally download images"""
-          prefix = f"{label} " if label else ""
+          plabel = f"{label} " if label else ""
           with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
-              task = progress.add_task(f"{prefix}Queued...", total=None)
+              task = progress.add_task(f"{plabel}Queued...", total=None)
 
               def on_progress(msg_type, data):
                   if msg_type == "executing" and data.get("node"):
-                      progress.update(task, description=f"{prefix}Executing node {data['node']}...")
+                      progress.update(task, description=f"{plabel}Executing node {data['node']}...")
                   elif msg_type == "progress":
                       val = data.get("value", 0)
                       mx = data.get("max", 0)
                       if mx > 0:
-                          progress.update(task, description=f"{prefix}Sampling step {val}/{mx}...")
+                          progress.update(task, description=f"{plabel}Sampling step {val}/{mx}...")
 
               result = client.wait_for_completion(prompt_id, on_progress=on_progress)
 
@@ -451,8 +632,11 @@ let
               for node_id, node_output in result["outputs"].items():
                   for img in node_output.get("images", []):
                       data = client.get_image(img["filename"], img.get("subfolder", ""))
-                      (output / img["filename"]).write_bytes(data)
-                      console.print(f"[green]Saved:[/green] {output / img['filename']}")
+                      fname = img["filename"]
+                      if prefix:
+                          fname = f"{prefix}_{fname}"
+                      (output / fname).write_bytes(data)
+                      console.print(f"[green]Saved:[/green] {output / fname}")
 
           return result
 
@@ -475,6 +659,7 @@ let
           output: Path = typer.Option(None, "--output", "-o", help="Output directory"),
           count: int = typer.Option(1, "--count", "-c", help="Number of images to generate (varies seed)"),
           parallel: bool = typer.Option(False, "--parallel", help="Submit all jobs at once instead of sequentially"),
+          prefix: str = typer.Option(None, "--prefix", help="Prefix for output filenames"),
       ):
           """Submit a workflow to ComfyUI"""
           client = get_client()
@@ -487,7 +672,7 @@ let
               prompt_id = client.submit(workflow)
               console.print(f"[green]Submitted:[/green] {prompt_id}")
               if wait:
-                  _wait_and_download(client, prompt_id, output)
+                  _wait_and_download(client, prompt_id, output, prefix=prefix)
               return
 
           # Batch count: determine base seed
@@ -506,7 +691,7 @@ let
                   prompt_ids.append(pid)
               if wait:
                   for i, pid in enumerate(prompt_ids):
-                      _wait_and_download(client, pid, output, label=f"[{i+1}/{count}]")
+                      _wait_and_download(client, pid, output, label=f"[{i+1}/{count}]", prefix=prefix)
           else:
               # Sequential: submit, wait, download one at a time
               for i in range(count):
@@ -515,7 +700,7 @@ let
                   pid = client.submit(wf)
                   console.print(f"[green]Submitted {i+1}/{count}:[/green] {pid}")
                   if wait:
-                      _wait_and_download(client, pid, output, label=f"[{i+1}/{count}]")
+                      _wait_and_download(client, pid, output, label=f"[{i+1}/{count}]", prefix=prefix)
 
 
       @app.command()
@@ -556,6 +741,7 @@ let
           workflow_path: Path = typer.Option(..., "--workflow", "-W", help="Workflow JSON file"),
           output: Path = typer.Option(None, "--output", "-o", help="Output directory"),
           parallel: bool = typer.Option(False, "--parallel", help="Submit all at once"),
+          prefix: str = typer.Option(None, "--prefix", help="Prefix for output filenames"),
       ):
           """Run multiple jobs from a JSON batch file"""
           client = get_client()
@@ -590,7 +776,7 @@ let
                   console.print(f"[green]Submitted {i+1}/{total}:[/green] {pid}")
                   prompt_ids.append(pid)
               for i, pid in enumerate(prompt_ids):
-                  _wait_and_download(client, pid, output, label=f"[{i+1}/{total}]")
+                  _wait_and_download(client, pid, output, label=f"[{i+1}/{total}]", prefix=prefix)
           else:
               for i, job in enumerate(jobs):
                   wf = deepcopy(base_workflow)
@@ -610,7 +796,146 @@ let
                   )
                   pid = client.submit(wf)
                   console.print(f"[green]Submitted {i+1}/{total}:[/green] {pid}")
-                  _wait_and_download(client, pid, output, label=f"[{i+1}/{total}]")
+                  _wait_and_download(client, pid, output, label=f"[{i+1}/{total}]", prefix=prefix)
+
+
+      @app.command()
+      def cancel(
+          prompt_ids: list[str] = typer.Argument(None),
+          clear: bool = typer.Option(False, "--clear", help="Clear all pending jobs from the queue"),
+          all_: bool = typer.Option(False, "--all", help="Interrupt running job and clear pending queue"),
+      ):
+          """Cancel running or pending ComfyUI jobs"""
+          client = get_client()
+          if all_:
+              client.interrupt()
+              client.clear_queue()
+              console.print("[yellow]Interrupted running job and cleared queue[/yellow]")
+          elif clear:
+              client.clear_queue()
+              console.print("[yellow]Cleared pending queue[/yellow]")
+          elif prompt_ids:
+              client.delete_from_queue(prompt_ids)
+              for pid in prompt_ids:
+                  console.print(f"[yellow]Removed from queue:[/yellow] {pid}")
+          else:
+              client.interrupt()
+              console.print("[yellow]Interrupted running job[/yellow]")
+
+
+      @app.command()
+      def status():
+          """Show ComfyUI server status and system info"""
+          client = get_client()
+          stats = client.get_system_stats()
+          q = client.get_queue()
+
+          sys_info = stats.get("system", {})
+          info_lines = []
+          if sys_info.get("comfyui_version"):
+              info_lines.append(f"ComfyUI:  {sys_info['comfyui_version']}")
+          if sys_info.get("pytorch_version"):
+              info_lines.append(f"PyTorch:  {sys_info['pytorch_version']}")
+          if sys_info.get("python_version"):
+              info_lines.append(f"Python:   {sys_info['python_version']}")
+          if sys_info.get("os"):
+              info_lines.append(f"OS:       {sys_info['os']}")
+
+          ram = sys_info.get("ram_total", 0)
+          ram_free = sys_info.get("ram_free", 0)
+          if ram > 0:
+              info_lines.append(f"RAM:      {ram_free / (1024**3):.1f} GB free / {ram / (1024**3):.1f} GB total")
+
+          if info_lines:
+              console.print(Panel("\n".join(info_lines), title="Server Info"))
+
+          devices = stats.get("devices", [])
+          if devices:
+              table = Table(title="Devices")
+              table.add_column("Name")
+              table.add_column("Type")
+              table.add_column("VRAM Free")
+              table.add_column("VRAM Total")
+              for dev in devices:
+                  vfree = dev.get("vram_free", 0)
+                  vtotal = dev.get("vram_total", 0)
+                  table.add_row(
+                      dev.get("name", "unknown"),
+                      dev.get("type", "unknown"),
+                      f"{vfree / (1024**3):.1f} GB",
+                      f"{vtotal / (1024**3):.1f} GB",
+                  )
+              console.print(table)
+
+          running = len(q.get("queue_running", []))
+          pending = len(q.get("queue_pending", []))
+          console.print(f"\nQueue: [bold]{running}[/bold] running, [bold]{pending}[/bold] pending")
+
+
+      @app.command()
+      def models(
+          folder: str = typer.Argument(None, help="Model folder (checkpoints, loras, vae, etc.)"),
+      ):
+          """List available models or model types"""
+          client = get_client()
+          if folder:
+              items = client.get_models(folder)
+              if not items:
+                  console.print(f"[yellow]No models found in {folder}[/yellow]")
+              else:
+                  for item in sorted(items):
+                      console.print(item)
+          else:
+              types = client.get_model_types()
+              for t in sorted(types):
+                  console.print(t)
+
+
+      @app.command()
+      def info(
+          image_path: Path = typer.Argument(..., help="Path to a ComfyUI-generated PNG image"),
+          json_output: bool = typer.Option(False, "--json", "-j", help="Output full metadata as JSON"),
+      ):
+          """Display generation metadata from a ComfyUI PNG image"""
+          if not image_path.exists():
+              console.print(f"[red]Error:[/red] File not found: {image_path}")
+              raise typer.Exit(1)
+
+          metadata = extract_comfyui_metadata(image_path)
+          if not metadata:
+              console.print("[yellow]No ComfyUI metadata found in image[/yellow]")
+              raise typer.Exit(1)
+
+          if json_output:
+              console.print(json.dumps(metadata, indent=2))
+              return
+
+          summary = summarize_metadata(metadata)
+          if not summary:
+              console.print("[yellow]Could not extract generation parameters[/yellow]")
+              console.print("Use --json to see raw metadata")
+              raise typer.Exit(1)
+
+          if "model" in summary:
+              console.print(f"[bold]Model:[/bold]    {summary['model']}")
+          if "positive_prompt" in summary:
+              console.print(f"[bold]Prompt:[/bold]   {summary['positive_prompt']}")
+          if "negative_prompt" in summary:
+              console.print(f"[bold]Negative:[/bold] {summary['negative_prompt']}")
+          if "seed" in summary:
+              console.print(f"[bold]Seed:[/bold]     {summary['seed']}")
+          if "steps" in summary:
+              console.print(f"[bold]Steps:[/bold]    {summary['steps']}")
+          if "cfg" in summary:
+              console.print(f"[bold]CFG:[/bold]      {summary['cfg']}")
+          if "sampler" in summary:
+              console.print(f"[bold]Sampler:[/bold]  {summary['sampler']}")
+          if "scheduler" in summary:
+              console.print(f"[bold]Scheduler:[/bold] {summary['scheduler']}")
+          if "denoise" in summary:
+              console.print(f"[bold]Denoise:[/bold]  {summary['denoise']}")
+          if "width" in summary and "height" in summary:
+              console.print(f"[bold]Size:[/bold]     {summary['width']}x{summary['height']}")
 
 
       def main():
@@ -622,11 +947,19 @@ let
       queue_app = typer.Typer()
       result_app = typer.Typer()
       batch_app = typer.Typer()
+      cancel_app = typer.Typer()
+      status_app = typer.Typer()
+      models_app = typer.Typer()
+      info_app = typer.Typer()
 
       submit_app.command()(submit)
       queue_app.command()(queue)
       result_app.command()(result)
       batch_app.command()(batch)
+      cancel_app.command()(cancel)
+      status_app.command()(status)
+      models_app.command()(models)
+      info_app.command()(info)
 
 
       def submit_cli():
@@ -647,6 +980,26 @@ let
       def batch_cli():
           """Entry point for comfyui-batch"""
           batch_app()
+
+
+      def cancel_cli():
+          """Entry point for comfyui-cancel"""
+          cancel_app()
+
+
+      def status_cli():
+          """Entry point for comfyui-status"""
+          status_app()
+
+
+      def models_cli():
+          """Entry point for comfyui-models"""
+          models_app()
+
+
+      def info_cli():
+          """Entry point for comfyui-info"""
+          info_app()
     '';
   };
 
@@ -657,16 +1010,20 @@ let
     cp ${initPy} $out/share/comfyui-client/src/comfyui_client/__init__.py
     cp ${clientPy} $out/share/comfyui-client/src/comfyui_client/client.py
     cp ${workflowPy} $out/share/comfyui-client/src/comfyui_client/workflow.py
+    cp ${metadataPy} $out/share/comfyui-client/src/comfyui_client/metadata.py
     cp ${cliPy} $out/share/comfyui-client/src/comfyui_client/cli.py
 
-    cat > $out/share/comfyui-client/.flox-build-v1 << 'FLOX_BUILD'
-    FLOX_BUILD_RUNTIME_VERSION=1
-    description: Initial build recipe version marker
+    cat > $out/share/comfyui-client/.flox-build-v2 << 'FLOX_BUILD'
+    FLOX_BUILD_RUNTIME_VERSION=2
+    description: Client tools release
     date: 2026-02-23
     change:
-      Bundle 16 workflow JSON files (4 models x 4 ops) into Nix store.
-      Add inpaint operation. Fix cached prompt race condition in WS wait.
-      Wrapper scripts default to $FLOX_ENV/share/comfyui-client/workflows.
+      Add --prefix output naming to submit and batch.
+      Add comfyui-cancel (interrupt/clear/delete from queue).
+      Add comfyui-status (server info, RAM, GPU, queue counts).
+      Add comfyui-models (list model folders and models).
+      Add comfyui-info (PNG metadata reader, no server needed).
+      Add bash tab completions for all commands and wrappers.
     FLOX_BUILD
   '';
 
@@ -754,6 +1111,11 @@ let
       When used with \fB\-\-count\fR, submit all jobs at once instead of
       sequentially. Without this flag, each job is submitted, waited on (if
       \fB\-\-wait\fR), and downloaded before the next one starts.
+      .TP
+      .BR \-\-prefix " " \fITEXT\fR
+      Prefix string prepended to output filenames. When set, downloaded images
+      are saved as \fIprefix\fR_\fIoriginal_filename\fR instead of just
+      \fIoriginal_filename\fR.
       .SH ENVIRONMENT
       .TP
       .B COMFYUI_HOST
@@ -1011,6 +1373,18 @@ let
       .TP
       .BR comfyui-result (1)
       Retrieve output images from a completed workflow.
+      .TP
+      .BR comfyui-cancel (1)
+      Cancel running or pending jobs.
+      .TP
+      .BR comfyui-status (1)
+      Show server status, versions, RAM, and GPU info.
+      .TP
+      .BR comfyui-models (1)
+      List available models by folder type.
+      .TP
+      .BR comfyui-info (1)
+      Display generation metadata from ComfyUI PNG images.
       .SH WRAPPER SCRIPTS
       For convenience, the package includes wrapper scripts that automatically
       select the appropriate workflow file for common model/operation combinations.
@@ -1162,7 +1536,11 @@ let
       .BR comfyui-submit (1),
       .BR comfyui-batch (1),
       .BR comfyui-queue (1),
-      .BR comfyui-result (1)
+      .BR comfyui-result (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1)
     '';
   };
 
@@ -1204,6 +1582,9 @@ let
       .TP
       .BR \-\-parallel
       Submit all jobs at once instead of sequentially.
+      .TP
+      .BR \-\-prefix " " \fITEXT\fR
+      Prefix string prepended to output filenames.
       .SH BATCH FILE FORMAT
       The batch file must contain a JSON array of objects. Each object can have
       the following optional keys:
@@ -1268,6 +1649,246 @@ let
     '';
   };
 
+  manStatus = writeTextFile {
+    name = "comfyui-status.1";
+    text = ''
+      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-status \- show ComfyUI server status and system info
+      .SH SYNOPSIS
+      .B comfyui-status
+      .SH DESCRIPTION
+      .B comfyui-status
+      displays the ComfyUI server status including software versions, RAM usage,
+      GPU devices with VRAM, and current queue counts.
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH EXAMPLES
+      Check local server status:
+      .PP
+      .RS
+      .nf
+      comfyui-status
+      .fi
+      .RE
+      .PP
+      Check remote server:
+      .PP
+      .RS
+      .nf
+      COMFYUI_HOST=gpu-server.local comfyui-status
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-queue (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
+  manModels = writeTextFile {
+    name = "comfyui-models.1";
+    text = ''
+      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-models \- list available ComfyUI models
+      .SH SYNOPSIS
+      .B comfyui-models
+      .RI [ FOLDER ]
+      .SH DESCRIPTION
+      .B comfyui-models
+      lists available model types or models within a specific folder. Without
+      arguments, it lists all model folder types (checkpoints, loras, vae, etc.).
+      With a folder argument, it lists all models in that folder.
+      .SH ARGUMENTS
+      .TP
+      .I FOLDER
+      Model folder type to list. Common values: checkpoints, loras, vae,
+      controlnet, clip, clip_vision, upscale_models, embeddings.
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH EXAMPLES
+      List all model folder types:
+      .PP
+      .RS
+      .nf
+      comfyui-models
+      .fi
+      .RE
+      .PP
+      List available checkpoints:
+      .PP
+      .RS
+      .nf
+      comfyui-models checkpoints
+      .fi
+      .RE
+      .PP
+      List LoRA models on a remote server:
+      .PP
+      .RS
+      .nf
+      COMFYUI_HOST=gpu-server.local comfyui-models loras
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
+  manInfo = writeTextFile {
+    name = "comfyui-info.1";
+    text = ''
+      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-info \- display generation metadata from ComfyUI PNG images
+      .SH SYNOPSIS
+      .B comfyui-info
+      .I image_path
+      .RI [ OPTIONS ]
+      .SH DESCRIPTION
+      .B comfyui-info
+      reads ComfyUI metadata embedded in PNG images and displays the generation
+      parameters. ComfyUI stores workflow and prompt data as PNG text chunks.
+      This is a local command and does not require a running ComfyUI server.
+      .SH ARGUMENTS
+      .TP
+      .I image_path
+      Path to a ComfyUI-generated PNG image file.
+      .SH OPTIONS
+      .TP
+      .BR \-j ", " \-\-json
+      Output the full metadata (prompt and workflow) as JSON instead of the
+      human-readable summary.
+      .SH OUTPUT
+      By default, displays a summary of generation parameters:
+      .PP
+      .RS
+      .nf
+      Model:     sd_xl_base_1.0.safetensors
+      Prompt:    a beautiful landscape
+      Seed:      42
+      Steps:     20
+      CFG:       7.0
+      Sampler:   euler
+      Scheduler: normal
+      Size:      1024x1024
+      .fi
+      .RE
+      .PP
+      With \fB\-\-json\fR, outputs the complete ComfyUI prompt and workflow
+      metadata as a JSON object.
+      .SH EXAMPLES
+      Show generation info for an image:
+      .PP
+      .RS
+      .nf
+      comfyui-info output/ComfyUI_00001_.png
+      .fi
+      .RE
+      .PP
+      Dump full metadata as JSON:
+      .PP
+      .RS
+      .nf
+      comfyui-info output/ComfyUI_00001_.png --json
+      .fi
+      .RE
+      .PP
+      Pipe JSON to jq for inspection:
+      .PP
+      .RS
+      .nf
+      comfyui-info output/ComfyUI_00001_.png -j | jq '.prompt'
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
+  manCancel = writeTextFile {
+    name = "comfyui-cancel.1";
+    text = ''
+      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-cancel \- cancel running or pending ComfyUI jobs
+      .SH SYNOPSIS
+      .B comfyui-cancel
+      .RI [ ID... ]
+      .RI [ OPTIONS ]
+      .SH DESCRIPTION
+      .B comfyui-cancel
+      cancels ComfyUI jobs. With no arguments, it interrupts the currently
+      running workflow. Specific pending jobs can be removed by prompt ID.
+      .SH ARGUMENTS
+      .TP
+      .I ID...
+      One or more prompt IDs to remove from the pending queue.
+      .SH OPTIONS
+      .TP
+      .BR \-\-clear
+      Clear all pending jobs from the queue (does not interrupt the running job).
+      .TP
+      .BR \-\-all
+      Interrupt the running job and clear all pending jobs.
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH EXAMPLES
+      Interrupt the currently running job:
+      .PP
+      .RS
+      .nf
+      comfyui-cancel
+      .fi
+      .RE
+      .PP
+      Remove specific jobs from the queue:
+      .PP
+      .RS
+      .nf
+      comfyui-cancel a1b2c3d4-... e5f6a7b8-...
+      .fi
+      .RE
+      .PP
+      Clear the entire pending queue:
+      .PP
+      .RS
+      .nf
+      comfyui-cancel --clear
+      .fi
+      .RE
+      .PP
+      Stop everything:
+      .PP
+      .RS
+      .nf
+      comfyui-cancel --all
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-queue (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
   # Bundle workflow files
   workflowFiles = runCommand "comfyui-workflows" {} ''
     mkdir -p $out/share/comfyui-client/workflows/api
@@ -1281,6 +1902,10 @@ let
     cp ${manQueue} $out/share/man/man1/comfyui-queue.1
     cp ${manResult} $out/share/man/man1/comfyui-result.1
     cp ${manBatch} $out/share/man/man1/comfyui-batch.1
+    cp ${manCancel} $out/share/man/man1/comfyui-cancel.1
+    cp ${manStatus} $out/share/man/man1/comfyui-status.1
+    cp ${manModels} $out/share/man/man1/comfyui-models.1
+    cp ${manInfo} $out/share/man/man1/comfyui-info.1
     cp ${manOverview} $out/share/man/man7/comfyui-client.7
   '';
 
@@ -1319,10 +1944,158 @@ let
     '';
   };
 
+  bashCompletions = writeTextFile {
+    name = "comfyui-completions.bash";
+    text = ''
+      # Bash completions for comfyui-client commands
+
+      _comfyui_submit_completions() {
+          local cur prev opts
+          COMPREPLY=()
+          cur="''${COMP_WORDS[COMP_CWORD]}"
+          prev="''${COMP_WORDS[COMP_CWORD-1]}"
+
+          opts="--prompt --negative --seed --steps --cfg --width --height --denoise --sampler --scheduler --image --wait --output --count --parallel --prefix --help"
+
+          case "$prev" in
+              --sampler)
+                  COMPREPLY=( $(compgen -W "euler euler_ancestral heun dpmpp_2m dpmpp_2m_sde dpmpp_3m_sde uni_pc ddim" -- "$cur") )
+                  return 0
+                  ;;
+              --scheduler)
+                  COMPREPLY=( $(compgen -W "normal karras exponential sgm_uniform simple ddim_uniform beta" -- "$cur") )
+                  return 0
+                  ;;
+              --image|--output|-i|-o)
+                  COMPREPLY=( $(compgen -f -- "$cur") )
+                  return 0
+                  ;;
+              --prompt|--negative|--seed|--steps|--cfg|--width|--height|--denoise|--count|--prefix|-p|-n|-s|-W|-H|-d|-c)
+                  return 0
+                  ;;
+          esac
+
+          if [[ "$cur" == -* ]]; then
+              COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+          else
+              COMPREPLY=( $(compgen -f -- "$cur") )
+          fi
+      }
+
+      _comfyui_cancel_completions() {
+          local cur opts
+          COMPREPLY=()
+          cur="''${COMP_WORDS[COMP_CWORD]}"
+          opts="--clear --all --help"
+
+          if [[ "$cur" == -* ]]; then
+              COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+          fi
+      }
+
+      _comfyui_models_completions() {
+          local cur folders
+          COMPREPLY=()
+          cur="''${COMP_WORDS[COMP_CWORD]}"
+          folders="checkpoints loras vae controlnet clip clip_vision upscale_models embeddings hypernetworks"
+
+          if [[ "$cur" != -* ]]; then
+              COMPREPLY=( $(compgen -W "$folders" -- "$cur") )
+          else
+              COMPREPLY=( $(compgen -W "--help" -- "$cur") )
+          fi
+      }
+
+      _comfyui_info_completions() {
+          local cur prev opts
+          COMPREPLY=()
+          cur="''${COMP_WORDS[COMP_CWORD]}"
+          opts="--json --help"
+
+          if [[ "$cur" == -* ]]; then
+              COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+          else
+              COMPREPLY=( $(compgen -f -X '!*.png' -- "$cur") )
+          fi
+      }
+
+      _comfyui_batch_completions() {
+          local cur prev opts
+          COMPREPLY=()
+          cur="''${COMP_WORDS[COMP_CWORD]}"
+          prev="''${COMP_WORDS[COMP_CWORD-1]}"
+          opts="--workflow --output --parallel --prefix --help"
+
+          case "$prev" in
+              --workflow|-W|--output|-o)
+                  COMPREPLY=( $(compgen -f -- "$cur") )
+                  return 0
+                  ;;
+          esac
+
+          if [[ "$cur" == -* ]]; then
+              COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+          else
+              COMPREPLY=( $(compgen -f -- "$cur") )
+          fi
+      }
+
+      _comfyui_simple_completions() {
+          local cur
+          COMPREPLY=()
+          cur="''${COMP_WORDS[COMP_CWORD]}"
+          if [[ "$cur" == -* ]]; then
+              COMPREPLY=( $(compgen -W "--help" -- "$cur") )
+          fi
+      }
+
+      # Register completions
+      complete -F _comfyui_submit_completions comfyui-submit
+      complete -F _comfyui_batch_completions comfyui-batch
+      complete -F _comfyui_cancel_completions comfyui-cancel
+      complete -F _comfyui_models_completions comfyui-models
+      complete -F _comfyui_info_completions comfyui-info
+      complete -F _comfyui_simple_completions comfyui-queue
+      complete -F _comfyui_simple_completions comfyui-status
+      complete -F _comfyui_simple_completions comfyui-result
+
+      # Register wrapper scripts (same options as submit)
+      complete -F _comfyui_submit_completions sd15-txt2img
+      complete -F _comfyui_submit_completions sd15-img2img
+      complete -F _comfyui_submit_completions sd15-upscale
+      complete -F _comfyui_submit_completions sd15-inpaint
+      complete -F _comfyui_submit_completions sdxl-txt2img
+      complete -F _comfyui_submit_completions sdxl-img2img
+      complete -F _comfyui_submit_completions sdxl-upscale
+      complete -F _comfyui_submit_completions sdxl-inpaint
+      complete -F _comfyui_submit_completions sd35-txt2img
+      complete -F _comfyui_submit_completions sd35-img2img
+      complete -F _comfyui_submit_completions sd35-upscale
+      complete -F _comfyui_submit_completions sd35-inpaint
+      complete -F _comfyui_submit_completions flux-txt2img
+      complete -F _comfyui_submit_completions flux-img2img
+      complete -F _comfyui_submit_completions flux-upscale
+      complete -F _comfyui_submit_completions flux-inpaint
+    '';
+  };
+
+  completionFiles = runCommand "comfyui-completions" {} ''
+    mkdir -p $out/share/bash-completion/completions
+    cp ${bashCompletions} $out/share/bash-completion/completions/comfyui-submit
+    for cmd in comfyui-batch comfyui-cancel comfyui-status comfyui-models comfyui-info \
+               comfyui-queue comfyui-result \
+               sd15-txt2img sd15-img2img sd15-upscale sd15-inpaint \
+               sdxl-txt2img sdxl-img2img sdxl-upscale sdxl-inpaint \
+               sd35-txt2img sd35-img2img sd35-upscale sd35-inpaint \
+               flux-txt2img flux-img2img flux-upscale flux-inpaint; do
+      ln -s comfyui-submit $out/share/bash-completion/completions/$cmd
+    done
+  '';
+
 in
 symlinkJoin {
   name = "comfyui-scripts";
-  paths = allScripts ++ [ pythonSource setupScript manPages workflowFiles ];
+  paths = allScripts ++ [ pythonSource setupScript manPages workflowFiles completionFiles ];
   meta = {
     description = "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)";
   };
