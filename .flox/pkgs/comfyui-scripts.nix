@@ -54,6 +54,7 @@ let
       comfyui-submit = "comfyui_client.cli:submit_cli"
       comfyui-queue = "comfyui_client.cli:queue_cli"
       comfyui-result = "comfyui_client.cli:result_cli"
+      comfyui-batch = "comfyui_client.cli:batch_cli"
 
       [build-system]
       requires = ["hatchling"]
@@ -71,6 +72,7 @@ let
           clean_workflow,
           set_prompt,
           set_seed,
+          get_seed,
           set_steps,
           set_cfg,
           set_dimensions,
@@ -86,6 +88,7 @@ let
           "clean_workflow",
           "set_prompt",
           "set_seed",
+          "get_seed",
           "set_steps",
           "set_cfg",
           "set_dimensions",
@@ -262,6 +265,21 @@ let
           return workflow
 
 
+      def get_seed(workflow: dict) -> int | None:
+          """Read current seed from first KSampler node"""
+          for node_id, node in workflow.items():
+              if not isinstance(node, dict):
+                  continue
+              class_type = node.get("class_type", "")
+              if class_type in ("KSampler", "KSamplerAdvanced", "SamplerCustom"):
+                  inputs = node.get("inputs", {})
+                  if "seed" in inputs:
+                      return inputs["seed"]
+                  elif "noise_seed" in inputs:
+                      return inputs["noise_seed"]
+          return None
+
+
       def set_steps(workflow: dict, steps: int) -> dict:
           """Set sampling steps in KSampler nodes"""
           for node_id, node in workflow.items():
@@ -348,7 +366,9 @@ let
     name = "cli.py";
     text = ''
       """CLI commands for ComfyUI client"""
+      import json
       import typer
+      from copy import deepcopy
       from rich.console import Console
       from rich.progress import Progress, SpinnerColumn, TextColumn
       from pathlib import Path
@@ -359,6 +379,7 @@ let
           load_workflow,
           set_prompt,
           set_seed,
+          get_seed,
           set_steps,
           set_cfg,
           set_dimensions,
@@ -379,28 +400,9 @@ let
           )
 
 
-      @app.command()
-      def submit(
-          workflow_path: Path,
-          prompt: str = typer.Option(None, "--prompt", "-p", help="Positive prompt"),
-          negative: str = typer.Option("", "--negative", "-n", help="Negative prompt"),
-          seed: int = typer.Option(None, "--seed", "-s", help="Random seed"),
-          steps: int = typer.Option(None, "--steps", help="Sampling steps"),
-          cfg: float = typer.Option(None, "--cfg", help="CFG scale"),
-          width: int = typer.Option(None, "--width", "-W", help="Image width"),
-          height: int = typer.Option(None, "--height", "-H", help="Image height"),
-          denoise: float = typer.Option(None, "--denoise", "-d", help="Denoise strength (0.0-1.0)"),
-          sampler: str = typer.Option(None, "--sampler", help="Sampler name (euler, dpmpp_2m, etc.)"),
-          scheduler: str = typer.Option(None, "--scheduler", help="Scheduler (normal, karras, etc.)"),
-          image: Path = typer.Option(None, "--image", "-i", help="Input image (for img2img)"),
-          wait: bool = typer.Option(False, "--wait", "-w", help="Wait for completion"),
-          output: Path = typer.Option(None, "--output", "-o", help="Output directory"),
-      ):
-          """Submit a workflow to ComfyUI"""
-          client = get_client()
-          workflow = load_workflow(workflow_path)
-
-          # Apply all specified parameters
+      def _apply_params(workflow, prompt, negative, seed, steps, cfg, width, height,
+                        denoise, sampler, scheduler, image):
+          """Apply CLI parameter overrides to a workflow"""
           if prompt:
               workflow = set_prompt(workflow, prompt, negative)
           if seed is not None:
@@ -419,33 +421,96 @@ let
               workflow = set_scheduler(workflow, scheduler)
           if image:
               workflow = set_input_image(workflow, str(image))
+          return workflow
 
-          prompt_id = client.submit(workflow)
-          console.print(f"[green]Submitted:[/green] {prompt_id}")
 
-          if wait:
-              with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
-                  task = progress.add_task("Queued...", total=None)
+      def _wait_and_download(client, prompt_id, output, label=""):
+          """Wait for completion with progress display, optionally download images"""
+          prefix = f"{label} " if label else ""
+          with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+              task = progress.add_task(f"{prefix}Queued...", total=None)
 
-                  def on_progress(msg_type, data):
-                      if msg_type == "executing" and data.get("node"):
-                          progress.update(task, description=f"Executing node {data['node']}...")
-                      elif msg_type == "progress":
-                          val = data.get("value", 0)
-                          mx = data.get("max", 0)
-                          if mx > 0:
-                              progress.update(task, description=f"Sampling step {val}/{mx}...")
+              def on_progress(msg_type, data):
+                  if msg_type == "executing" and data.get("node"):
+                      progress.update(task, description=f"{prefix}Executing node {data['node']}...")
+                  elif msg_type == "progress":
+                      val = data.get("value", 0)
+                      mx = data.get("max", 0)
+                      if mx > 0:
+                          progress.update(task, description=f"{prefix}Sampling step {val}/{mx}...")
 
-                  result = client.wait_for_completion(prompt_id, on_progress=on_progress)
+              result = client.wait_for_completion(prompt_id, on_progress=on_progress)
 
-              # Download images if output specified
-              if output and "outputs" in result:
-                  output.mkdir(parents=True, exist_ok=True)
-                  for node_id, node_output in result["outputs"].items():
-                      for img in node_output.get("images", []):
-                          data = client.get_image(img["filename"], img.get("subfolder", ""))
-                          (output / img["filename"]).write_bytes(data)
-                          console.print(f"[green]Saved:[/green] {output / img['filename']}")
+          if output and "outputs" in result:
+              output.mkdir(parents=True, exist_ok=True)
+              for node_id, node_output in result["outputs"].items():
+                  for img in node_output.get("images", []):
+                      data = client.get_image(img["filename"], img.get("subfolder", ""))
+                      (output / img["filename"]).write_bytes(data)
+                      console.print(f"[green]Saved:[/green] {output / img['filename']}")
+
+          return result
+
+
+      @app.command()
+      def submit(
+          workflow_path: Path,
+          prompt: str = typer.Option(None, "--prompt", "-p", help="Positive prompt"),
+          negative: str = typer.Option("", "--negative", "-n", help="Negative prompt"),
+          seed: int = typer.Option(None, "--seed", "-s", help="Random seed"),
+          steps: int = typer.Option(None, "--steps", help="Sampling steps"),
+          cfg: float = typer.Option(None, "--cfg", help="CFG scale"),
+          width: int = typer.Option(None, "--width", "-W", help="Image width"),
+          height: int = typer.Option(None, "--height", "-H", help="Image height"),
+          denoise: float = typer.Option(None, "--denoise", "-d", help="Denoise strength (0.0-1.0)"),
+          sampler: str = typer.Option(None, "--sampler", help="Sampler name (euler, dpmpp_2m, etc.)"),
+          scheduler: str = typer.Option(None, "--scheduler", help="Scheduler (normal, karras, etc.)"),
+          image: Path = typer.Option(None, "--image", "-i", help="Input image (for img2img)"),
+          wait: bool = typer.Option(False, "--wait", "-w", help="Wait for completion"),
+          output: Path = typer.Option(None, "--output", "-o", help="Output directory"),
+          count: int = typer.Option(1, "--count", "-c", help="Number of images to generate (varies seed)"),
+          parallel: bool = typer.Option(False, "--parallel", help="Submit all jobs at once instead of sequentially"),
+      ):
+          """Submit a workflow to ComfyUI"""
+          client = get_client()
+          workflow = load_workflow(workflow_path)
+          workflow = _apply_params(workflow, prompt, negative, seed, steps, cfg,
+                                   width, height, denoise, sampler, scheduler, image)
+
+          if count <= 1:
+              # Single image — original behavior
+              prompt_id = client.submit(workflow)
+              console.print(f"[green]Submitted:[/green] {prompt_id}")
+              if wait:
+                  _wait_and_download(client, prompt_id, output)
+              return
+
+          # Batch count: determine base seed
+          base_seed = seed if seed is not None else get_seed(workflow)
+          if base_seed is None:
+              base_seed = 0
+
+          if parallel:
+              # Submit all at once, then wait
+              prompt_ids = []
+              for i in range(count):
+                  wf = deepcopy(workflow)
+                  wf = set_seed(wf, base_seed + i)
+                  pid = client.submit(wf)
+                  console.print(f"[green]Submitted {i+1}/{count}:[/green] {pid}")
+                  prompt_ids.append(pid)
+              if wait:
+                  for i, pid in enumerate(prompt_ids):
+                      _wait_and_download(client, pid, output, label=f"[{i+1}/{count}]")
+          else:
+              # Sequential: submit, wait, download one at a time
+              for i in range(count):
+                  wf = deepcopy(workflow)
+                  wf = set_seed(wf, base_seed + i)
+                  pid = client.submit(wf)
+                  console.print(f"[green]Submitted {i+1}/{count}:[/green] {pid}")
+                  if wait:
+                      _wait_and_download(client, pid, output, label=f"[{i+1}/{count}]")
 
 
       @app.command()
@@ -480,6 +545,69 @@ let
                   console.print(f"[green]Saved:[/green] {output / img['filename']}")
 
 
+      @app.command()
+      def batch(
+          batch_file: Path,
+          workflow_path: Path = typer.Option(..., "--workflow", "-W", help="Workflow JSON file"),
+          output: Path = typer.Option(None, "--output", "-o", help="Output directory"),
+          parallel: bool = typer.Option(False, "--parallel", help="Submit all at once"),
+      ):
+          """Run multiple jobs from a JSON batch file"""
+          client = get_client()
+          base_workflow = load_workflow(workflow_path)
+          jobs = json.loads(batch_file.read_text())
+
+          if not isinstance(jobs, list):
+              console.print("[red]Error:[/red] Batch file must contain a JSON array")
+              raise typer.Exit(1)
+
+          total = len(jobs)
+
+          if parallel:
+              prompt_ids = []
+              for i, job in enumerate(jobs):
+                  wf = deepcopy(base_workflow)
+                  wf = _apply_params(
+                      wf,
+                      prompt=job.get("prompt"),
+                      negative=job.get("negative", ""),
+                      seed=job.get("seed"),
+                      steps=job.get("steps"),
+                      cfg=job.get("cfg"),
+                      width=job.get("width"),
+                      height=job.get("height"),
+                      denoise=job.get("denoise"),
+                      sampler=job.get("sampler"),
+                      scheduler=job.get("scheduler"),
+                      image=job.get("image"),
+                  )
+                  pid = client.submit(wf)
+                  console.print(f"[green]Submitted {i+1}/{total}:[/green] {pid}")
+                  prompt_ids.append(pid)
+              for i, pid in enumerate(prompt_ids):
+                  _wait_and_download(client, pid, output, label=f"[{i+1}/{total}]")
+          else:
+              for i, job in enumerate(jobs):
+                  wf = deepcopy(base_workflow)
+                  wf = _apply_params(
+                      wf,
+                      prompt=job.get("prompt"),
+                      negative=job.get("negative", ""),
+                      seed=job.get("seed"),
+                      steps=job.get("steps"),
+                      cfg=job.get("cfg"),
+                      width=job.get("width"),
+                      height=job.get("height"),
+                      denoise=job.get("denoise"),
+                      sampler=job.get("sampler"),
+                      scheduler=job.get("scheduler"),
+                      image=job.get("image"),
+                  )
+                  pid = client.submit(wf)
+                  console.print(f"[green]Submitted {i+1}/{total}:[/green] {pid}")
+                  _wait_and_download(client, pid, output, label=f"[{i+1}/{total}]")
+
+
       def main():
           app()
 
@@ -488,10 +616,12 @@ let
       submit_app = typer.Typer()
       queue_app = typer.Typer()
       result_app = typer.Typer()
+      batch_app = typer.Typer()
 
       submit_app.command()(submit)
       queue_app.command()(queue)
       result_app.command()(result)
+      batch_app.command()(batch)
 
 
       def submit_cli():
@@ -507,6 +637,11 @@ let
       def result_cli():
           """Entry point for comfyui-result"""
           result_app()
+
+
+      def batch_cli():
+          """Entry point for comfyui-batch"""
+          batch_app()
     '';
   };
 
@@ -593,6 +728,17 @@ let
       .BR \-o ", " \-\-output " " \fIDIR\fR
       Output directory for downloading generated images. Only effective when used
       with \fB\-\-wait\fR. Images are saved with their original filenames.
+      .TP
+      .BR \-c ", " \-\-count " " \fIN\fR
+      Number of images to generate. The seed is auto-incremented for each
+      variation (base, base+1, base+2, ...). The base seed is taken from
+      \fB\-\-seed\fR if specified, otherwise from the workflow's current seed.
+      Default: 1
+      .TP
+      .BR \-\-parallel
+      When used with \fB\-\-count\fR, submit all jobs at once instead of
+      sequentially. Without this flag, each job is submitted, waited on (if
+      \fB\-\-wait\fR), and downloaded before the next one starts.
       .SH ENVIRONMENT
       .TP
       .B COMFYUI_HOST
@@ -669,9 +815,28 @@ let
       comfyui-result a1b2c3d4-e5f6-7890-abcd-ef1234567890 -o ./output
       .fi
       .RE
+      .PP
+      Generate 5 seed variations sequentially:
+      .PP
+      .RS
+      .nf
+      comfyui-submit workflow.json \\
+          -p "a cat in space" -s 100 --count 5 --wait -o ./output
+      .fi
+      .RE
+      .PP
+      Generate 10 variations in parallel:
+      .PP
+      .RS
+      .nf
+      comfyui-submit workflow.json \\
+          -p "a cat in space" --count 10 --parallel --wait -o ./output
+      .fi
+      .RE
       .SH SEE ALSO
       .BR comfyui-queue (1),
       .BR comfyui-result (1),
+      .BR comfyui-batch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -821,6 +986,10 @@ let
       .TP
       .BR comfyui-submit (1)
       Submit a workflow JSON file to ComfyUI with optional parameter overrides.
+      Supports \fB\-\-count\fR for generating multiple seed variations.
+      .TP
+      .BR comfyui-batch (1)
+      Run multiple jobs with different parameters from a JSON batch file.
       .TP
       .BR comfyui-queue (1)
       Display the current queue status.
@@ -959,8 +1128,111 @@ let
       .RE
       .SH SEE ALSO
       .BR comfyui-submit (1),
+      .BR comfyui-batch (1),
       .BR comfyui-queue (1),
       .BR comfyui-result (1)
+    '';
+  };
+
+  manBatch = writeTextFile {
+    name = "comfyui-batch.1";
+    text = ''
+      .TH COMFYUI-BATCH 1 "2026-02-22" "comfyui-client 0.1.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-batch \- run multiple ComfyUI jobs from a batch file
+      .SH SYNOPSIS
+      .B comfyui-batch
+      .I batch_file
+      .B \-\-workflow
+      .I workflow_path
+      .RI [ OPTIONS ]
+      .SH DESCRIPTION
+      .B comfyui-batch
+      reads a JSON file containing an array of job objects and submits each one
+      to a running ComfyUI server. Each job can override prompt, seed, steps, and
+      other generation parameters. All jobs share the same base workflow.
+      .PP
+      By default, jobs run sequentially: each is submitted, waited on, and its
+      images downloaded before the next job starts. With \fB\-\-parallel\fR, all
+      jobs are submitted at once and then awaited in order.
+      .SH ARGUMENTS
+      .TP
+      .I batch_file
+      Path to a JSON file containing an array of job objects. See
+      .B BATCH FILE FORMAT
+      below.
+      .SH OPTIONS
+      .TP
+      .BR \-W ", " \-\-workflow " " \fIPATH\fR
+      Path to the base workflow JSON file (required). This should be a workflow
+      exported in API format.
+      .TP
+      .BR \-o ", " \-\-output " " \fIDIR\fR
+      Output directory for downloading generated images.
+      .TP
+      .BR \-\-parallel
+      Submit all jobs at once instead of sequentially.
+      .SH BATCH FILE FORMAT
+      The batch file must contain a JSON array of objects. Each object can have
+      the following optional keys:
+      .PP
+      .RS
+      .nf
+      prompt      Positive prompt text (string)
+      negative    Negative prompt text (string)
+      seed        Random seed (integer)
+      steps       Number of sampling steps (integer)
+      cfg         CFG scale (float)
+      width       Image width in pixels (integer)
+      height      Image height in pixels (integer)
+      denoise     Denoise strength 0.0-1.0 (float)
+      sampler     Sampler algorithm name (string)
+      scheduler   Scheduler type (string)
+      image       Input image path for img2img (string)
+      .fi
+      .RE
+      .PP
+      Any key not present in a job object will use the workflow default.
+      .SH EXAMPLES
+      Simple batch file with three prompts:
+      .PP
+      .RS
+      .nf
+      [
+        {"prompt": "oil painting of mountains", "seed": 42},
+        {"prompt": "watercolor of ocean", "steps": 50},
+        {"prompt": "digital art of forest"}
+      ]
+      .fi
+      .RE
+      .PP
+      Run a batch file:
+      .PP
+      .RS
+      .nf
+      comfyui-batch jobs.json -W workflow.json -o ./output
+      .fi
+      .RE
+      .PP
+      Run in parallel:
+      .PP
+      .RS
+      .nf
+      comfyui-batch jobs.json -W workflow.json --parallel -o ./output
+      .fi
+      .RE
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-queue (1),
+      .BR comfyui-result (1),
+      .BR comfyui-client (7)
     '';
   };
 
@@ -970,6 +1242,7 @@ let
     cp ${manSubmit} $out/share/man/man1/comfyui-submit.1
     cp ${manQueue} $out/share/man/man1/comfyui-queue.1
     cp ${manResult} $out/share/man/man1/comfyui-result.1
+    cp ${manBatch} $out/share/man/man1/comfyui-batch.1
     cp ${manOverview} $out/share/man/man7/comfyui-client.7
   '';
 
