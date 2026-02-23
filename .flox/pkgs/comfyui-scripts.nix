@@ -1,4 +1,4 @@
-{ lib, writeShellApplication, writeTextFile, symlinkJoin, runCommand }:
+{ lib, stdenv, writeShellApplication, writeTextFile, symlinkJoin, runCommand }:
 
 let
   # Model types for workflow scripts
@@ -1013,17 +1013,15 @@ let
     cp ${metadataPy} $out/share/comfyui-client/src/comfyui_client/metadata.py
     cp ${cliPy} $out/share/comfyui-client/src/comfyui_client/cli.py
 
-    cat > $out/share/comfyui-client/.flox-build-v2 << 'FLOX_BUILD'
-    FLOX_BUILD_RUNTIME_VERSION=2
-    description: Client tools release
+    cat > $out/share/comfyui-client/.flox-build-v3 << 'FLOX_BUILD'
+    FLOX_BUILD_RUNTIME_VERSION=3
+    description: Man page fixes and packaging cleanup
     date: 2026-02-23
     change:
-      Add --prefix output naming to submit and batch.
-      Add comfyui-cancel (interrupt/clear/delete from queue).
-      Add comfyui-status (server info, RAM, GPU, queue counts).
-      Add comfyui-models (list model folders and models).
-      Add comfyui-info (PNG metadata reader, no server needed).
-      Add bash tab completions for all commands and wrappers.
+      Fix version strings in all man page headers (0.6.9).
+      Complete SEE ALSO cross-references on all 8 command pages.
+      Normalize man page dates to 2026-02-23.
+      Switch to mkDerivation for proper Flox catalog versioning.
     FLOX_BUILD
   '';
 
@@ -1031,7 +1029,7 @@ let
   manSubmit = writeTextFile {
     name = "comfyui-submit.1";
     text = ''
-      .TH COMFYUI-SUBMIT 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-SUBMIT 1 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-submit \- submit a workflow to ComfyUI
       .SH SYNOPSIS
@@ -1225,7 +1223,7 @@ let
   manQueue = writeTextFile {
     name = "comfyui-queue.1";
     text = ''
-      .TH COMFYUI-QUEUE 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-QUEUE 1 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-queue \- show ComfyUI queue status
       .SH SYNOPSIS
@@ -1284,7 +1282,7 @@ let
   manResult = writeTextFile {
     name = "comfyui-result.1";
     text = ''
-      .TH COMFYUI-RESULT 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-RESULT 1 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-result \- retrieve results from a ComfyUI workflow
       .SH SYNOPSIS
@@ -1365,7 +1363,7 @@ let
   manOverview = writeTextFile {
     name = "comfyui-client.7";
     text = ''
-      .TH COMFYUI-CLIENT 7 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CLIENT 7 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-client \- command-line interface for ComfyUI
       .SH DESCRIPTION
@@ -1561,7 +1559,7 @@ let
   manBatch = writeTextFile {
     name = "comfyui-batch.1";
     text = ''
-      .TH COMFYUI-BATCH 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-BATCH 1 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-batch \- run multiple ComfyUI jobs from a batch file
       .SH SYNOPSIS
@@ -1670,7 +1668,7 @@ let
   manStatus = writeTextFile {
     name = "comfyui-status.1";
     text = ''
-      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-status \- show ComfyUI server status and system info
       .SH SYNOPSIS
@@ -1717,7 +1715,7 @@ let
   manModels = writeTextFile {
     name = "comfyui-models.1";
     text = ''
-      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-models \- list available ComfyUI models
       .SH SYNOPSIS
@@ -1779,7 +1777,7 @@ let
   manInfo = writeTextFile {
     name = "comfyui-info.1";
     text = ''
-      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-info \- display generation metadata from ComfyUI PNG images
       .SH SYNOPSIS
@@ -1857,7 +1855,7 @@ let
   manCancel = writeTextFile {
     name = "comfyui-cancel.1";
     text = ''
-      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.2.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.6.9" "ComfyUI Client Manual"
       .SH NAME
       comfyui-cancel \- cancel running or pending ComfyUI jobs
       .SH SYNOPSIS
@@ -2133,10 +2131,25 @@ let
     done
   '';
 
+  joined = symlinkJoin {
+    name = "comfyui-scripts-joined";
+    paths = allScripts ++ [ pythonSource setupScript manPages workflowFiles completionFiles ];
+  };
+
 in
-symlinkJoin {
-  name = "comfyui-scripts-0.2.0";
-  paths = allScripts ++ [ pythonSource setupScript manPages workflowFiles completionFiles ];
+stdenv.mkDerivation {
+  pname = "comfyui-scripts";
+  version = "0.6.9";
+
+  dontUnpack = true;
+  dontBuild = true;
+
+  installPhase = ''
+    runHook preInstall
+    cp -RP ${joined} $out
+    runHook postInstall
+  '';
+
   meta = {
     description = "CLI wrapper scripts for ComfyUI workflows (sd15, sdxl, sd35, flux)";
   };
