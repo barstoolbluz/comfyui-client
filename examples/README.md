@@ -8,7 +8,6 @@ Before running these examples:
 
 1. Ensure ComfyUI server is running (default: `localhost:8188`)
 2. Activate the Flox environment: `flox activate`
-3. Make scripts executable: `chmod +x *.sh`
 
 ## Note on Workflow Files
 
