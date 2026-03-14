@@ -78,6 +78,50 @@ The workflow files in `../workflows/api/` don't have `.json` extensions but are 
 # Then in another terminal: comfyui-status --watch
 ```
 
+### 7. FLUX Fast Demo (`demo-flux-fast.sh`)
+- **Purpose**: Quick FLUX demo optimized for speed
+- **Features**: Reduced settings for faster generation
+- **Model**: FLUX (512x512, 5 steps)
+- **Output**: Single image with FLUX quality
+- **Note**: Best for quick demos, not production quality
+
+```bash
+./demo-flux-fast.sh
+```
+
+### 8. FLUX High Quality Demo (`demo-flux.sh`)
+- **Purpose**: Showcase FLUX's full capabilities
+- **Features**: Complex natural language prompt
+- **Model**: FLUX (1024x1024, 10 steps)
+- **Output**: High-quality artistic image
+- **Warning**: Takes 1-3 minutes depending on GPU
+
+```bash
+./demo-flux.sh
+```
+
+### 9. FLUX Quality Comparison (`demo-flux-quality.sh`)
+- **Purpose**: Compare FLUX vs SD1.5 vs SDXL
+- **Features**: Same prompt across all models
+- **Models**: SD 1.5, SDXL, FLUX
+- **Output**: 3 images for side-by-side comparison
+- **Note**: Demonstrates FLUX's superior quality
+
+```bash
+./demo-flux-quality.sh
+```
+
+### 10. FLUX Creative Showcase (`demo-flux-creative.sh`)
+- **Purpose**: Generate diverse creative pieces with FLUX
+- **Features**: 4 different artistic styles
+- **Model**: FLUX (various creative prompts)
+- **Output**: Surreal art, portrait, architecture, product shot
+- **Note**: Shows FLUX's versatility across genres
+
+```bash
+./demo-flux-creative.sh
+```
+
 ## Batch Prompts File
 
 `batch-prompts.json` contains 8 different themed prompts:
@@ -109,10 +153,12 @@ output/
 ## Tips for Demos
 
 1. **Start with `demo-simple.sh`** - Fastest way to verify everything works
-2. **Use `demo-variations.sh`** - Great for showing seed variation effects
-3. **Run `demo-parallel.sh`** - Demonstrates GPU utilization efficiency
-4. **Try `demo-batch.sh`** - Shows production-like batch processing
-5. **Compare with `demo-advanced.sh`** - Visual quality comparison across models
+2. **For quick FLUX demo use `demo-flux-fast.sh`** - Optimized settings for speed
+3. **Use `demo-variations.sh`** - Great for showing seed variation effects
+4. **Run `demo-parallel.sh`** - Demonstrates GPU utilization efficiency
+5. **Try `demo-batch.sh`** - Shows production-like batch processing
+6. **Compare with `demo-flux-quality.sh`** - See why FLUX is superior
+7. **Show versatility with `demo-flux-creative.sh`** - 4 different artistic styles
 
 ## Customization
 
@@ -124,9 +170,11 @@ Feel free to modify these scripts:
 
 ## Performance Notes
 
-- **SD 1.5**: Fastest, 512x512, good for demos
-- **SDXL**: Slower, 1024x1024, higher quality
-- **SD 3.5**: Latest model, varies by configuration
+- **SD 1.5**: Fastest (~10-15 sec), 512x512, good for quick demos
+- **SDXL**: Medium speed (~30-45 sec), 1024x1024, higher quality
+- **SD 3.5**: Latest SD model (~30-60 sec), good quality
+- **FLUX**: Slowest (1-3 min), highest quality, best prompt understanding
+- **FLUX Fast Mode**: 512x512, 5 steps (~20-30 sec) for demos
 - **Parallel mode**: Faster overall but uses more VRAM
 - **Sequential mode**: More stable, lower resource usage
 
