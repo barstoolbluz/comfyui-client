@@ -1,0 +1,74 @@
+[
+  {
+    "prompt": "a serene Japanese garden with cherry blossoms, koi pond, traditional bridge, spring morning",
+    "negative": "ugly, tiling, poorly drawn, out of frame",
+    "seed": 100,
+    "steps": 20,
+    "cfg": 7.5,
+    "width": 512,
+    "height": 512
+  },
+  {
+    "prompt": "a fierce dragon perched on a mountain peak, storm clouds, lightning, epic fantasy art",
+    "negative": "cartoonish, childish, low quality, blurry",
+    "seed": 200,
+    "steps": 25,
+    "cfg": 8.0,
+    "width": 512,
+    "height": 512
+  },
+  {
+    "prompt": "an underwater coral reef scene, colorful fish, sunlight rays through water, marine life",
+    "negative": "dark, murky, distorted, unrealistic",
+    "seed": 300,
+    "steps": 20,
+    "cfg": 7.0,
+    "width": 512,
+    "height": 512
+  },
+  {
+    "prompt": "a cozy coffee shop interior, warm lighting, vintage decor, books and plants, morning ambiance",
+    "negative": "modern, sterile, empty, dark",
+    "seed": 400,
+    "steps": 20,
+    "cfg": 7.5,
+    "width": 512,
+    "height": 512
+  },
+  {
+    "prompt": "an astronaut floating in deep space, Earth in background, stars and nebula, photorealistic",
+    "negative": "cartoon, illustration, low detail, blurry",
+    "seed": 500,
+    "steps": 25,
+    "cfg": 8.0,
+    "width": 512,
+    "height": 512
+  },
+  {
+    "prompt": "ancient Egyptian temple at sunset, hieroglyphs, golden sand dunes, archaeological site",
+    "negative": "modern elements, tourists, low quality",
+    "seed": 600,
+    "steps": 22,
+    "cfg": 7.5,
+    "width": 512,
+    "height": 512
+  },
+  {
+    "prompt": "a futuristic robot in a neon-lit city, cyberpunk aesthetic, rain, reflections",
+    "negative": "old fashioned, rusty, broken, low tech",
+    "seed": 700,
+    "steps": 20,
+    "cfg": 7.0,
+    "width": 512,
+    "height": 512
+  },
+  {
+    "prompt": "a majestic lion portrait, golden mane, intense gaze, wildlife photography style",
+    "negative": "cartoon, unrealistic, blurry, distorted",
+    "seed": 800,
+    "steps": 20,
+    "cfg": 7.5,
+    "width": 512,
+    "height": 512
+  }
+]
