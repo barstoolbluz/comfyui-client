@@ -3,6 +3,8 @@ version = 1
 [install]
 
 [vars]
+COMFYUI_SERVE_HOST = "0.0.0.0"
+COMFYUI_SERVE_PORT = "3000"
 
 [hook]
 on-activate = """
@@ -11,6 +13,10 @@ export COMFYUI_WATCH_DIR="${COMFYUI_WATCH_DIR:-$FLOX_ENV_CACHE/watch}"
 
 [services.comfyui-watch]
 command = "comfyui-watch"
+is-daemon = false
+
+[services.comfyui-api]
+command = "comfyui-serve"
 is-daemon = false
 
 [profile]

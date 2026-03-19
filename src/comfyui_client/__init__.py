@@ -1,7 +1,9 @@
 """ComfyUI API Client"""
 from .client import ComfyUIClient
+from .conversion import convert_image, encode_image_for_payload
 from .metadata import extract_comfyui_metadata, summarize_metadata
 from .watcher import FolderWatcher
+from .webhooks import WebhookPayload, deliver_webhook, sign_payload
 from .workflow import (
     load_workflow,
     clean_workflow,
@@ -21,6 +23,11 @@ from .workflow import (
 __all__ = [
     "ComfyUIClient",
     "FolderWatcher",
+    "convert_image",
+    "encode_image_for_payload",
+    "WebhookPayload",
+    "deliver_webhook",
+    "sign_payload",
     "extract_comfyui_metadata",
     "summarize_metadata",
     "load_workflow",

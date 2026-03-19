@@ -56,7 +56,7 @@ let
   manSubmit = writeTextFile {
     name = "comfyui-submit.1";
     text = ''
-      .TH COMFYUI-SUBMIT 1 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-SUBMIT 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-submit \- submit a workflow to ComfyUI
       .SH SYNOPSIS
@@ -244,6 +244,7 @@ let
       .BR comfyui-models (1),
       .BR comfyui-info (1),
       .BR comfyui-watch (1),
+      .BR comfyui-serve (1),
       .BR comfyui-client (7)
     '';
   };
@@ -251,7 +252,7 @@ let
   manQueue = writeTextFile {
     name = "comfyui-queue.1";
     text = ''
-      .TH COMFYUI-QUEUE 1 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-QUEUE 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-queue \- show ComfyUI queue status
       .SH SYNOPSIS
@@ -304,6 +305,7 @@ let
       .BR comfyui-models (1),
       .BR comfyui-info (1),
       .BR comfyui-watch (1),
+      .BR comfyui-serve (1),
       .BR comfyui-client (7)
     '';
   };
@@ -311,7 +313,7 @@ let
   manResult = writeTextFile {
     name = "comfyui-result.1";
     text = ''
-      .TH COMFYUI-RESULT 1 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-RESULT 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-result \- retrieve results from a ComfyUI workflow
       .SH SYNOPSIS
@@ -386,6 +388,7 @@ let
       .BR comfyui-models (1),
       .BR comfyui-info (1),
       .BR comfyui-watch (1),
+      .BR comfyui-serve (1),
       .BR comfyui-client (7)
     '';
   };
@@ -393,7 +396,7 @@ let
   manOverview = writeTextFile {
     name = "comfyui-client.7";
     text = ''
-      .TH COMFYUI-CLIENT 7 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CLIENT 7 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-client \- command-line interface for ComfyUI
       .SH DESCRIPTION
@@ -430,6 +433,9 @@ let
       .TP
       .BR comfyui-watch (1)
       Watch a folder for job files and submit them to ComfyUI automatically.
+      .TP
+      .BR comfyui-serve (1)
+      Start the HTTP API server for workflow submission and webhook delivery.
       .SH WRAPPER SCRIPTS
       For convenience, the package includes wrapper scripts that automatically
       select the appropriate workflow file for common model/operation combinations.
@@ -586,14 +592,15 @@ let
       .BR comfyui-status (1),
       .BR comfyui-models (1),
       .BR comfyui-info (1),
-      .BR comfyui-watch (1)
+      .BR comfyui-watch (1),
+      .BR comfyui-serve (1)
     '';
   };
 
   manBatch = writeTextFile {
     name = "comfyui-batch.1";
     text = ''
-      .TH COMFYUI-BATCH 1 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-BATCH 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-batch \- run multiple ComfyUI jobs from a batch file
       .SH SYNOPSIS
@@ -696,6 +703,7 @@ let
       .BR comfyui-models (1),
       .BR comfyui-info (1),
       .BR comfyui-watch (1),
+      .BR comfyui-serve (1),
       .BR comfyui-client (7)
     '';
   };
@@ -703,7 +711,7 @@ let
   manStatus = writeTextFile {
     name = "comfyui-status.1";
     text = ''
-      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-status \- show ComfyUI server status and system info
       .SH SYNOPSIS
@@ -744,6 +752,7 @@ let
       .BR comfyui-models (1),
       .BR comfyui-info (1),
       .BR comfyui-watch (1),
+      .BR comfyui-serve (1),
       .BR comfyui-client (7)
     '';
   };
@@ -751,7 +760,7 @@ let
   manModels = writeTextFile {
     name = "comfyui-models.1";
     text = ''
-      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-models \- list available ComfyUI models
       .SH SYNOPSIS
@@ -807,6 +816,7 @@ let
       .BR comfyui-status (1),
       .BR comfyui-info (1),
       .BR comfyui-watch (1),
+      .BR comfyui-serve (1),
       .BR comfyui-client (7)
     '';
   };
@@ -814,7 +824,7 @@ let
   manInfo = writeTextFile {
     name = "comfyui-info.1";
     text = ''
-      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-info \- display generation metadata from ComfyUI PNG images
       .SH SYNOPSIS
@@ -886,6 +896,7 @@ let
       .BR comfyui-status (1),
       .BR comfyui-models (1),
       .BR comfyui-watch (1),
+      .BR comfyui-serve (1),
       .BR comfyui-client (7)
     '';
   };
@@ -893,7 +904,7 @@ let
   manCancel = writeTextFile {
     name = "comfyui-cancel.1";
     text = ''
-      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-cancel \- cancel running or pending ComfyUI jobs
       .SH SYNOPSIS
@@ -963,6 +974,7 @@ let
       .BR comfyui-models (1),
       .BR comfyui-info (1),
       .BR comfyui-watch (1),
+      .BR comfyui-serve (1),
       .BR comfyui-client (7)
     '';
   };
@@ -970,7 +982,7 @@ let
   manWatch = writeTextFile {
     name = "comfyui-watch.1";
     text = ''
-      .TH COMFYUI-WATCH 1 "2026-03-19" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .TH COMFYUI-WATCH 1 "2026-03-19" "comfyui-client 0.8.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-watch \- watch a folder for ComfyUI job files
       .SH SYNOPSIS
@@ -1171,6 +1183,187 @@ let
       .BR comfyui-status (1),
       .BR comfyui-models (1),
       .BR comfyui-info (1),
+      .BR comfyui-serve (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
+  manServe = writeTextFile {
+    name = "comfyui-serve.1";
+    text = ''
+      .TH COMFYUI-SERVE 1 "2026-03-19" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-serve \- start the comfyui-client API server
+      .SH SYNOPSIS
+      .B comfyui-serve
+      .RI [ OPTIONS ]
+      .SH DESCRIPTION
+      .B comfyui-serve
+      starts a FastAPI HTTP server that accepts ComfyUI workflow submissions
+      and returns results synchronously or via webhook. The server provides
+      health and readiness endpoints suitable for Kubernetes probes, queue
+      and model inspection, and prompt cancellation.
+      .PP
+      Workflows are submitted via
+      .B POST /prompt
+      with a JSON body containing the ComfyUI API-format workflow. Without a
+      webhook URL, the server waits for completion and returns images inline
+      as base64-encoded data. With a webhook URL, the server returns 202
+      immediately and delivers results asynchronously.
+      .SH OPTIONS
+      .TP
+      .BR \-\-host " " \fIADDRESS\fR
+      Bind address. Default: \fBCOMFYUI_SERVE_HOST\fR or 0.0.0.0
+      .TP
+      .BR \-\-port " " \fIPORT\fR
+      Bind port. Default: \fBCOMFYUI_SERVE_PORT\fR or 3000
+      .TP
+      .BR \-\-log\-level " " \fILEVEL\fR
+      Uvicorn log level. Values: debug, info, warning, error, critical.
+      Default: info
+      .SH ENDPOINTS
+      .TS
+      l l l.
+      Method	Path	Description
+      _
+      GET	/health	Always returns 200 {"status":"ok"}
+      GET	/ready	200 if ComfyUI reachable, 503 otherwise
+      GET	/queue	Running and pending job counts
+      GET	/models	List model folder types
+      GET	/models/{type}	List models in a folder
+      GET	/status	System stats + queue combined
+      POST	/prompt	Submit workflow (sync or async)
+      POST	/cancel	Cancel a specific prompt by ID
+      POST	/cancel/all	Interrupt running + clear pending
+      .TE
+      .SH PROMPT SUBMISSION
+      .B POST /prompt
+      accepts a JSON body:
+      .PP
+      .RS
+      .nf
+      {
+        "prompt": { ... },
+        "id": "optional-request-id",
+        "webhook_url": "https://example.com/hook",
+        "convert_output": {
+          "format": "jpeg",
+          "quality": 90
+        }
+      }
+      .fi
+      .RE
+      .PP
+      The \fBprompt\fR field contains a ComfyUI API-format workflow dict.
+      .PP
+      Without \fBwebhook_url\fR: returns 200 with images as base64.
+      .PP
+      With \fBwebhook_url\fR: returns 202 immediately, delivers results
+      via POST to the webhook URL when complete.
+      .SH WEBHOOK SIGNING
+      If \fBCOMFYUI_WEBHOOK_SECRET\fR is set, webhook deliveries include an
+      HMAC-SHA256 signature following the Standard Webhooks specification.
+      .PP
+      Headers sent with each webhook POST:
+      .TP
+      .B webhook-id
+      Unique message identifier (msg_{request_id})
+      .TP
+      .B webhook-timestamp
+      Unix timestamp of the delivery attempt
+      .TP
+      .B webhook-signature
+      v1,{base64-encoded HMAC-SHA256} (only when secret is configured)
+      .PP
+      The signature is computed over: \fB"{msg_id}.{timestamp}.{body}"\fR
+      .PP
+      Secrets may use the \fBwhsec_\fR prefix (base64-encoded key after
+      stripping the prefix) per the Standard Webhooks convention.
+      .PP
+      Webhook delivery retries up to 3 times with exponential backoff
+      (1s, 2s, 4s).
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_SERVE_HOST
+      Default bind address. Default: 0.0.0.0
+      .TP
+      .B COMFYUI_SERVE_PORT
+      Default bind port. Default: 3000
+      .TP
+      .B COMFYUI_WEBHOOK_SECRET
+      HMAC-SHA256 secret for signing webhook payloads. Optional.
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH EXAMPLES
+      Start the server with defaults:
+      .PP
+      .RS
+      .nf
+      comfyui-serve
+      .fi
+      .RE
+      .PP
+      Start on a custom port:
+      .PP
+      .RS
+      .nf
+      comfyui-serve --port 8080
+      .fi
+      .RE
+      .PP
+      Submit a workflow synchronously (returns images inline):
+      .PP
+      .RS
+      .nf
+      curl -X POST http://localhost:3000/prompt \\
+        -H "Content-Type: application/json" \\
+        -d '{"prompt": {"1": {"class_type": "CheckpointLoaderSimple", ...}}}'
+      .fi
+      .RE
+      .PP
+      Submit with webhook (returns 202, delivers result later):
+      .PP
+      .RS
+      .nf
+      curl -X POST http://localhost:3000/prompt \\
+        -H "Content-Type: application/json" \\
+        -d '{
+          "prompt": { ... },
+          "webhook_url": "https://example.com/hook",
+          "convert_output": {"format": "jpeg", "quality": 90}
+        }'
+      .fi
+      .RE
+      .PP
+      Check readiness:
+      .PP
+      .RS
+      .nf
+      curl http://localhost:3000/ready
+      .fi
+      .RE
+      .PP
+      Run as a Flox service:
+      .PP
+      .RS
+      .nf
+      flox services start comfyui-api
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-queue (1),
+      .BR comfyui-result (1),
+      .BR comfyui-batch (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1),
+      .BR comfyui-watch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -1193,6 +1386,7 @@ let
     cp ${manModels} $out/share/man/man1/comfyui-models.1
     cp ${manInfo} $out/share/man/man1/comfyui-info.1
     cp ${manWatch} $out/share/man/man1/comfyui-watch.1
+    cp ${manServe} $out/share/man/man1/comfyui-serve.1
     cp ${manOverview} $out/share/man/man7/comfyui-client.7
   '';
 
@@ -1358,6 +1552,28 @@ let
           fi
       }
 
+      _comfyui_serve_completions() {
+          local cur prev opts
+          COMPREPLY=()
+          cur="''${COMP_WORDS[COMP_CWORD]}"
+          prev="''${COMP_WORDS[COMP_CWORD-1]}"
+          opts="--host --port --log-level --help"
+
+          case "$prev" in
+              --log-level)
+                  COMPREPLY=( $(compgen -W "debug info warning error critical" -- "$cur") )
+                  return 0
+                  ;;
+              --host|--port)
+                  return 0
+                  ;;
+          esac
+
+          if [[ "$cur" == -* ]]; then
+              COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+          fi
+      }
+
       # Register completions
       complete -F _comfyui_submit_completions comfyui-submit
       complete -F _comfyui_batch_completions comfyui-batch
@@ -1368,6 +1584,7 @@ let
       complete -F _comfyui_simple_completions comfyui-status
       complete -F _comfyui_simple_completions comfyui-result
       complete -F _comfyui_watch_completions comfyui-watch
+      complete -F _comfyui_serve_completions comfyui-serve
 
       # Register wrapper scripts (same options as submit)
       complete -F _comfyui_submit_completions sd15-txt2img
@@ -1393,7 +1610,7 @@ let
     mkdir -p $out/share/bash-completion/completions
     cp ${bashCompletions} $out/share/bash-completion/completions/comfyui-submit
     for cmd in comfyui-batch comfyui-cancel comfyui-status comfyui-models comfyui-info \
-               comfyui-queue comfyui-result comfyui-watch \
+               comfyui-queue comfyui-result comfyui-watch comfyui-serve \
                sd15-txt2img sd15-img2img sd15-upscale sd15-inpaint \
                sdxl-txt2img sdxl-img2img sdxl-upscale sdxl-inpaint \
                sd35-txt2img sd35-img2img sd35-upscale sd35-inpaint \
@@ -1410,7 +1627,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "comfyui-scripts";
-  version = "0.7.0";
+  version = "0.8.0";
 
   dontUnpack = true;
   dontBuild = true;
