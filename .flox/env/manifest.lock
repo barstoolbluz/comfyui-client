@@ -2,6 +2,17 @@
   "lockfile-version": 1,
   "manifest": {
     "version": 1,
+    "install": {
+      "comfyui-scripts": {
+        "store-path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0"
+      },
+      "python3": {
+        "pkg-path": "python311"
+      },
+      "uv": {
+        "pkg-path": "uv"
+      }
+    },
     "vars": {
       "COMFYUI_SERVE_HOST": "0.0.0.0",
       "COMFYUI_SERVE_PORT": "3000"
@@ -22,5 +33,265 @@
       }
     }
   },
-  "packages": []
+  "packages": [
+    {
+      "install_id": "comfyui-scripts",
+      "store_path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0",
+      "system": "aarch64-darwin",
+      "priority": 5
+    },
+    {
+      "install_id": "comfyui-scripts",
+      "store_path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0",
+      "system": "aarch64-linux",
+      "priority": 5
+    },
+    {
+      "install_id": "comfyui-scripts",
+      "store_path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0",
+      "system": "x86_64-darwin",
+      "priority": 5
+    },
+    {
+      "install_id": "comfyui-scripts",
+      "store_path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0",
+      "system": "x86_64-linux",
+      "priority": 5
+    },
+    {
+      "attr_path": "python311",
+      "broken": false,
+      "derivation": "/nix/store/fkyqwalnf2bd3imkajq1dmhzy1fx5jxw-python3-3.11.15.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python3",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=cda48547b432e8d3b18b4180ba07473762ec8558",
+      "name": "python3-3.11.15",
+      "pname": "python311",
+      "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+      "rev_count": 964459,
+      "rev_date": "2026-03-17T08:00:32Z",
+      "scrape_date": "2026-03-19T04:42:02.880004Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.11.15",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/y5p2pi469ry2v315qb0skzpif3h2r32a-python3-3.11.15"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python311",
+      "broken": false,
+      "derivation": "/nix/store/bz6s9k4i6khl206l8zq0k72jvj330vbl-python3-3.11.15.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python3",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=cda48547b432e8d3b18b4180ba07473762ec8558",
+      "name": "python3-3.11.15",
+      "pname": "python311",
+      "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+      "rev_count": 964459,
+      "rev_date": "2026-03-17T08:00:32Z",
+      "scrape_date": "2026-03-19T05:13:49.370772Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.11.15",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/ny6q11v4kfwafh3k2r6i5g1zdkpai711-python3-3.11.15-debug",
+        "out": "/nix/store/6p7vbda7p9skjcy64p6ssqq72n59n2xp-python3-3.11.15"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python311",
+      "broken": false,
+      "derivation": "/nix/store/6wqxklh6zz4anjq8qhp4ficapz1pc662-python3-3.11.15.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python3",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=cda48547b432e8d3b18b4180ba07473762ec8558",
+      "name": "python3-3.11.15",
+      "pname": "python311",
+      "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+      "rev_count": 964459,
+      "rev_date": "2026-03-17T08:00:32Z",
+      "scrape_date": "2026-03-19T05:43:18.046150Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.11.15",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/q988llmh5y3adcvzjnjzi3bkval5vgqn-python3-3.11.15"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python311",
+      "broken": false,
+      "derivation": "/nix/store/5w12zgya90ag13m5hvx0xfyc3x3248w3-python3-3.11.15.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python3",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=cda48547b432e8d3b18b4180ba07473762ec8558",
+      "name": "python3-3.11.15",
+      "pname": "python311",
+      "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+      "rev_count": 964459,
+      "rev_date": "2026-03-17T08:00:32Z",
+      "scrape_date": "2026-03-19T06:18:53.373131Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.11.15",
+      "outputs_to_install": [
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/mbl2lx921hgm9zlqyygs4c5zsi0q1xi5-python3-3.11.15-debug",
+        "out": "/nix/store/m0px3sm97qw6s187sq2vjyjl6jvhhgmk-python3-3.11.15"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "uv",
+      "broken": false,
+      "derivation": "/nix/store/ca4c5p52xg20k2ygh212fjl0sj027cns-uv-0.10.10.drv",
+      "description": "Extremely fast Python package installer and resolver, written in Rust",
+      "install_id": "uv",
+      "license": "[ Apache-2.0, MIT ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=cda48547b432e8d3b18b4180ba07473762ec8558",
+      "name": "uv-0.10.10",
+      "pname": "uv",
+      "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+      "rev_count": 964459,
+      "rev_date": "2026-03-17T08:00:32Z",
+      "scrape_date": "2026-03-19T04:43:49.381320Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.10.10",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/ak82pfbm5lz4n4bgdqw4vi2mz2yjhzva-uv-0.10.10"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "uv",
+      "broken": false,
+      "derivation": "/nix/store/9wlmkw8d5azyg2skikr8d51adp86k2dg-uv-0.10.10.drv",
+      "description": "Extremely fast Python package installer and resolver, written in Rust",
+      "install_id": "uv",
+      "license": "[ Apache-2.0, MIT ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=cda48547b432e8d3b18b4180ba07473762ec8558",
+      "name": "uv-0.10.10",
+      "pname": "uv",
+      "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+      "rev_count": 964459,
+      "rev_date": "2026-03-17T08:00:32Z",
+      "scrape_date": "2026-03-19T05:16:08.765874Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.10.10",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/25wyj6wz00gr09kiv2gszh11j2ka2p26-uv-0.10.10"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "uv",
+      "broken": false,
+      "derivation": "/nix/store/sx7qbqp2qpnz8iydxwg9wgvaz07cdrdz-uv-0.10.10.drv",
+      "description": "Extremely fast Python package installer and resolver, written in Rust",
+      "install_id": "uv",
+      "license": "[ Apache-2.0, MIT ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=cda48547b432e8d3b18b4180ba07473762ec8558",
+      "name": "uv-0.10.10",
+      "pname": "uv",
+      "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+      "rev_count": 964459,
+      "rev_date": "2026-03-17T08:00:32Z",
+      "scrape_date": "2026-03-19T05:45:08.532905Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.10.10",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/992pczhrcf1cdjiylh22r8xbx4xgj761-uv-0.10.10"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "uv",
+      "broken": false,
+      "derivation": "/nix/store/z31wwa66jhm52hnvisy4lmqh9y5bx4dm-uv-0.10.10.drv",
+      "description": "Extremely fast Python package installer and resolver, written in Rust",
+      "install_id": "uv",
+      "license": "[ Apache-2.0, MIT ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=cda48547b432e8d3b18b4180ba07473762ec8558",
+      "name": "uv-0.10.10",
+      "pname": "uv",
+      "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+      "rev_count": 964459,
+      "rev_date": "2026-03-17T08:00:32Z",
+      "scrape_date": "2026-03-19T06:21:22.078776Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.10.10",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/lsifgwpalj0dgnjh6raal9gmvcn6m6s5-uv-0.10.10"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    }
+  ]
 }
