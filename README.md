@@ -1,612 +1,489 @@
-# ComfyUI Client - Flox Environment
+# ComfyUI Client
 
-A powerful command-line interface for interacting with ComfyUI servers, packaged as a reproducible Flox environment. Submit workflows, monitor progress, and manage your AI image generation pipeline from the terminal.
+A complete toolkit for interacting with ComfyUI servers — CLI tools, an HTTP API server, and a watch-folder daemon — packaged as a reproducible [Flox](https://flox.dev) environment.
 
-## 🎯 Perfect Companion to ComfyUI-Complete
-
-This client environment perfectly complements the **ComfyUI-Complete** server environment:
+## Quick Start
 
 ```bash
-# Terminal 1: Start ComfyUI server with all models
-flox pull --copy barstoolbluz/comfyui-complete
-flox activate --start-services
-
-# Terminal 2: Use this client to interact with the server
-flox pull --copy barstoolbluz/comfyui-client
-flox activate
-comfyui-submit workflows/api/flux.json -p "amazing artwork" -w
-```
-
-The `comfyui-complete` environment provides a fully-configured ComfyUI server with models, while this `comfyui-client` environment provides the CLI tools to interact with it.
-
-## 🚀 Quick Start
-
-```bash
-# Clone and activate the environment
 git clone https://github.com/barstoolbluz/comfyui-client
 cd comfyui-client
 flox activate
 
-# Submit your first workflow (assumes ComfyUI running on localhost:8188)
-comfyui-submit workflows/api/sd15.json -p "a beautiful sunset" -w
+# Generate an image (ComfyUI must be running on localhost:8188)
+sd15-txt2img -p "a beautiful sunset over mountains" -w
+
+# Or start the API server and watch folder as services
+flox services start
 ```
 
-## 📋 Prerequisites
+## Prerequisites
 
-- **Flox**: Install from [flox.dev](https://flox.dev)
-- **ComfyUI Server**: Running instance (local or remote)
-  - Default: `http://localhost:8188`
-  - Or set `COMFYUI_HOST` and `COMFYUI_PORT` for remote servers
+- [Flox](https://flox.dev) installed
+- A running ComfyUI server (default: `localhost:8188`)
 
-## 🔧 Installation
+## Three Ways to Generate Images
 
-### Local Development Environment
+### 1. CLI Commands
+
+Sixteen convenience scripts cover every model and operation:
+
+```
+sd15-txt2img    sdxl-txt2img    sd35-txt2img    flux-txt2img
+sd15-img2img    sdxl-img2img    sd35-img2img    flux-img2img
+sd15-upscale    sdxl-upscale    sd35-upscale    flux-upscale
+sd15-inpaint    sdxl-inpaint    sd35-inpaint    flux-inpaint
+```
+
+Each is a thin wrapper around `comfyui-submit` with the correct workflow pre-selected:
 
 ```bash
-# Initialize from this repository
-cd comfyui-client
-flox activate
+# Text-to-image
+flux-txt2img -p "cyberpunk cityscape, neon rain" --steps 25 -w
 
-# The environment automatically:
-# - Creates a Python virtual environment
-# - Installs the CLI tools
-# - Sets up workflow symlinks
+# Image-to-image
+sdxl-img2img -p "oil painting style" -i photo.png --denoise 0.6 -w
+
+# Upscale
+sd15-upscale -p "sharp details" -i small.png -w
+
+# Inpaint
+sd35-inpaint -p "a red door" -i house.png -w
 ```
 
-### From FloxHub (Published Version)
+The CLI supports prompt, seed, steps, CFG, dimensions, denoise, sampler, scheduler, and input image. For advanced parameters like `upscale_by` or separate mask images, use the [API server](#2-http-api-server) template endpoints which expose the full parameter set for each operation.
+
+### 2. HTTP API Server
+
+A FastAPI server with typed endpoints for every model and operation, plus workflow submission with optional webhook callbacks.
 
 ```bash
-# Pull the environment from FloxHub
-flox pull --copy barstoolbluz/comfyui-client
+# Start the server
+comfyui-serve                         # default: 0.0.0.0:3000
+comfyui-serve --port 8080             # custom port
 
-# Activate it
-flox activate
+# Or as a Flox service
+flox services start comfyui-api
 ```
 
-### Remote Server Connection
+**Template endpoints** accept validated JSON and return a ready-to-submit workflow:
 
 ```bash
-# Connect to a remote ComfyUI instance
-COMFYUI_HOST=192.168.1.100 COMFYUI_PORT=8188 flox activate
-
-# These settings persist for your session
-comfyui-info  # Will connect to the remote server
+curl -X POST http://localhost:3000/workflow/flux/txt2img \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "a cat astronaut", "steps": 20, "seed": 42}'
 ```
 
-## 🛠️ Core Features
-
-### CLI Tools Suite
-
-The environment provides 8 specialized command-line tools:
-
-| Tool | Purpose | Example |
-|------|---------|---------|
-| `comfyui-submit` | Submit workflows with parameters | `comfyui-submit workflow.json -p "cat" -w` |
-| `comfyui-batch` | Run multiple jobs from batch file | `comfyui-batch jobs.json -W workflow.json` |
-| `comfyui-status` | Monitor queue and job status | `comfyui-status --watch` |
-| `comfyui-queue` | Show current queue status | `comfyui-queue` |
-| `comfyui-cancel` | Cancel running/queued jobs | `comfyui-cancel <prompt_id>` |
-| `comfyui-result` | Get result for a prompt ID | `comfyui-result <prompt_id> -o ./output` |
-| `comfyui-models` | List available models | `comfyui-models checkpoints` |
-| `comfyui-info` | Show server configuration | `comfyui-info` |
-
-### Bundled Workflows
-
-Pre-configured workflows for popular models:
-
-- `workflows/api/sd15.json` - Stable Diffusion 1.5
-- `workflows/api/sdxl.json` - Stable Diffusion XL
-- `workflows/api/sd35.json` - Stable Diffusion 3.5
-- `workflows/api/flux.json` - FLUX models
-- `workflows/api/img2img.json` - Image-to-image workflows
-
-## 📝 Configuration
-
-### Environment Variables
-
-Configure the client behavior through environment variables:
+**Prompt endpoint** submits a workflow to ComfyUI and returns generated images (base64-encoded):
 
 ```bash
-# Server connection (defaults shown)
-export COMFYUI_HOST="localhost"
-export COMFYUI_PORT="8188"
+# Synchronous — blocks until images are ready
+curl -X POST http://localhost:3000/prompt \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": <workflow-dict>}'
 
-# Custom workflow directory (optional)
-export COMFYUI_WORKFLOWS="$HOME/my-workflows"
-
-# Activate with custom settings
-COMFYUI_HOST=remote.server.com flox activate
+# Asynchronous — returns immediately, delivers results to webhook
+curl -X POST http://localhost:3000/prompt \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": <workflow-dict>, "webhook_url": "https://example.com/hook"}'
 ```
 
-### Persistent Configuration
-
-Edit `.flox/env/manifest.toml` to change defaults:
-
-```toml
-[vars]
-# Uncomment to set a custom workflow directory
-COMFYUI_WORKFLOWS = "$HOME/comfyui-work/user/default/workflows"
-```
-
-### Shell Completions
-
-Enable tab completion for all CLI commands:
+Pipe them together for end-to-end generation:
 
 ```bash
-# Bash
-comfyui-submit --install-completion
-
-# Or manually add to .bashrc
-eval "$(_COMFYUI_SUBMIT_COMPLETE=bash_source comfyui-submit)"
-
-# Zsh
-comfyui-submit --install-completion
-
-# Fish
-comfyui-submit --install-completion
-
-# After installation, restart your shell or source your config:
-source ~/.bashrc  # or ~/.zshrc
+curl -s -X POST localhost:3000/prompt \
+  -H "Content-Type: application/json" \
+  -d "$(curl -s -X POST localhost:3000/workflow/sd15/txt2img \
+    -H 'Content-Type: application/json' \
+    -d '{"prompt": "a lighthouse at sunset", "seed": 42, "steps": 20}')"
 ```
 
-Completions work for all tools and provide:
-- Command and option completion
-- File path completion for workflows and images
-- Model type suggestions for `comfyui-models`
-- Available scheduler/sampler names
+### 3. Watch Folder
 
-## 🎯 Command Reference
-
-### comfyui-submit
-
-Submit workflows to the ComfyUI server with customizable parameters.
+Drop JSON job files into a folder and the watcher submits them to ComfyUI automatically.
 
 ```bash
-# Basic usage
-comfyui-submit workflows/api/sd15.json -p "a majestic mountain"
+# Start the watcher
+comfyui-watch -d ~/jobs -w workflows/api/sd15/sd15-txt2img.json
 
-# Full parameter control
-comfyui-submit workflows/api/sdxl.json \
-  --prompt "cyberpunk city" \
-  --negative "blurry, low quality" \
-  --seed 42 \
-  --steps 30 \
-  --cfg 7.5 \
-  --width 1024 \
-  --height 1024 \
-  --wait \
-  --output ./output
-
-# Image-to-image generation
-comfyui-submit workflows/api/img2img.json \
-  --image input.png \
-  --prompt "make it sunset" \
-  --denoise 0.5 \
-  --wait
-
-# Batch generation with varied seeds
-comfyui-submit workflows/api/flux.json \
-  --prompt "portrait of a robot" \
-  --count 4 \
-  --parallel \
-  --prefix "robot_" \
-  --output ./batch_output
+# Or as a Flox service (uses $FLOX_ENV_CACHE/watch by default)
+flox services start comfyui-watch
 ```
 
-#### Batch Generation Modes
+The watcher creates this directory structure:
 
-The client supports two batch generation strategies:
-
-**Sequential Mode (default):**
-```bash
-# Submits jobs one at a time, waits for each to complete
-comfyui-submit workflow.json -p "landscape" --count 5 --wait
-# Advantage: Lower server load, predictable resource usage
-# Use when: Server has limited resources or you want controlled generation
+```
+watch/
+  incoming/     # Drop job files here
+  processing/   # Currently running
+  completed/    # Finished (with _result metadata)
+  failed/       # Errors (with _error metadata)
+  output/       # Generated images
 ```
 
-**Parallel Mode:**
-```bash
-# Submits all jobs at once to the queue
-comfyui-submit workflow.json -p "landscape" --count 5 --parallel --wait
-# Advantage: Faster overall completion if server can handle it
-# Use when: Server has multiple GPUs or high capacity
-```
-
-**How Batch Generation Works:**
-1. Takes your base parameters (prompt, steps, cfg, etc.)
-2. Generates unique seeds for each image (unless seed is fixed)
-3. Creates separate jobs with incremented seeds
-4. In sequential mode: Submits job 1, waits, submits job 2, etc.
-5. In parallel mode: Submits all jobs immediately to queue
-6. With `--wait`: Downloads all images as they complete
-7. Files are named: `{prefix}_{seed}_{timestamp}.png`
-
-**Options:**
-- `-p, --prompt TEXT`: Positive prompt for generation
-- `-n, --negative TEXT`: Negative prompt
-- `-s, --seed INTEGER`: Random seed (default: random)
-- `--steps INTEGER`: Sampling steps
-- `--cfg FLOAT`: CFG scale for guidance
-- `-W, --width INTEGER`: Output width
-- `-H, --height INTEGER`: Output height
-- `-d, --denoise FLOAT`: Denoise strength (0.0-1.0) for img2img
-- `--sampler TEXT`: Sampler algorithm (euler, dpmpp_2m, etc.)
-- `--scheduler TEXT`: Scheduler type (normal, karras, etc.)
-- `-i, --image PATH`: Input image for img2img workflows
-- `-w, --wait`: Wait for completion and download results
-- `-o, --output PATH`: Output directory for images
-- `-c, --count INTEGER`: Generate multiple images with varied seeds
-- `--parallel`: Submit all jobs simultaneously
-- `--prefix TEXT`: Filename prefix for outputs
-
-### comfyui-status
-
-Monitor the ComfyUI queue and job status.
+Job files support three formats:
 
 ```bash
-# Check current queue
-comfyui-status
+# Minimal — uses the default workflow (-w flag)
+echo '{"prompt": "a sunset", "seed": 42, "steps": 8}' > incoming/job.json
 
-# Watch queue in real-time (refreshes every 2 seconds)
-comfyui-status --watch
+# Full — specifies its own workflow
+echo '{"workflow": "path/to/workflow.json", "prompt": "a sunset"}' > incoming/job.json
 
-# Custom refresh interval
-comfyui-status --watch --interval 5
+# Batch — array of jobs processed sequentially
+echo '[{"prompt": "cats", "seed": 1}, {"prompt": "dogs", "seed": 2}]' > incoming/batch.json
 ```
 
-### comfyui-cancel
-
-Cancel running or queued generation jobs.
-
-```bash
-# Cancel a specific job
-comfyui-cancel 12345678-90ab-cdef-1234-567890abcdef
-
-# Cancel all queued jobs
-comfyui-cancel --all
-
-# Cancel currently running job
-comfyui-cancel --current
-```
-
-### comfyui-models
-
-List available models by category.
-
-```bash
-# List all model categories
-comfyui-models
-
-# List specific model type
-comfyui-models checkpoints
-comfyui-models loras
-comfyui-models vae
-comfyui-models embeddings
-comfyui-models controlnet
-
-# Filter results
-comfyui-models checkpoints | grep SD
-```
-
-### comfyui-queue
-
-Display current queue status without continuous monitoring.
-
-```bash
-# Show queue status
-comfyui-queue
-
-# Shows:
-# - Running jobs
-# - Pending jobs
-# - Queue position for each job
-```
-
-### comfyui-result
-
-Download results for a completed generation.
-
-```bash
-# Get result by prompt ID
-comfyui-result 12345678-90ab-cdef-1234-567890abcdef
-
-# Save to specific directory
-comfyui-result <prompt_id> --output ./results
-
-# Get result with original metadata
-comfyui-result <prompt_id> --with-metadata
-```
-
-### comfyui-batch
-
-Process multiple generation jobs from a JSON batch file.
-
-```bash
-# Create a batch file (jobs.json)
-cat > jobs.json << 'EOF'
-[
-  {"prompt": "sunset over mountains", "seed": 42},
-  {"prompt": "cyberpunk city", "seed": 123},
-  {"prompt": "fantasy dragon", "seed": 456}
-]
-EOF
-
-# Run the batch
-comfyui-batch jobs.json -W workflows/api/sdxl.json
-
-# With additional parameters
-comfyui-batch jobs.json -W workflows/api/flux.json --wait --output ./batch_results
-```
-
-### comfyui-info
-
-Display server configuration and system information.
-
-```bash
-# Show server info
-comfyui-info
-
-# Output includes:
-# - Server version
-# - Python version
-# - PyTorch configuration
-# - Available devices (CPU/GPU)
-# - Memory usage
-# - Installed custom nodes
-```
-
-## 🗂️ Workflow Management
-
-### Using Bundled Workflows
-
-The environment includes tested workflows in `workflows/api/`:
-
-```bash
-# Stable Diffusion 1.5 - fastest, 512x512 default
-comfyui-submit workflows/api/sd15.json -p "ancient temple" -w
-
-# SDXL - high quality, 1024x1024 default
-comfyui-submit workflows/api/sdxl.json -p "futuristic city" -w
-
-# SD 3.5 - latest model
-comfyui-submit workflows/api/sd35.json -p "fantasy landscape" -w
-
-# FLUX - highest quality, slower
-comfyui-submit workflows/api/flux.json -p "photorealistic portrait" -w
-```
-
-### Using Custom Workflows
-
-```bash
-# Set custom workflow directory
-export COMFYUI_WORKFLOWS="$HOME/my-comfyui-workflows"
-flox activate
-
-# Now workflows symlink points to your directory
-ls workflows/  # Shows your custom workflows
-
-# Submit custom workflow
-comfyui-submit workflows/my-custom-workflow.json -p "custom prompt" -w
-```
-
-### Creating New Workflows
-
-1. Export from ComfyUI web interface (API format)
-2. Save to your workflows directory
-3. Submit with the CLI:
-
-```bash
-# Export from ComfyUI: Settings → Save (API Format)
-# Save as workflows/my-new-workflow.json
-comfyui-submit workflows/my-new-workflow.json -p "test prompt"
-```
-
-## 🔨 Development
-
-### Modifying the Python Client
-
-The Python package source is in `src/comfyui_client/`:
-
-```bash
-# Edit the client code
-vim src/comfyui_client/cli.py
-
-# Reinstall in the virtual environment
-flox activate
-pip install -e .
-
-# Test your changes
-comfyui-submit --help
-```
-
-### Building and Publishing Updates
-
-```bash
-# Increment version in manifest.toml
-vim .flox/env/manifest.toml
-
-# Build the package
-flox build comfyui-scripts
-
-# Publish to FloxHub (requires authentication)
-flox publish comfyui-scripts -o myorg
-```
-
-### Project Structure
-
-```
-comfyui-client/
-├── .flox/
-│   ├── env/
-│   │   └── manifest.toml    # Flox environment definition
-│   └── cache/               # Python venv (auto-created)
-├── src/
-│   └── comfyui_client/      # Python package source
-│       ├── client.py        # WebSocket client implementation
-│       ├── cli.py           # CLI commands
-│       ├── workflow.py      # Workflow manipulation
-│       └── __init__.py
-├── workflows/
-│   └── api/                 # Bundled workflow templates
-└── pyproject.toml           # Python package configuration
-```
-
-## 🌐 Publishing and Sharing
-
-### Share via FloxHub
-
-```bash
-# Push your customized environment
-flox push
-
-# Others can pull it
-flox pull --copy <your-handle>/comfyui-client
-```
-
-### Package Custom Workflows
-
-Include your workflows in the Flox package:
-
-```bash
-# Add to .flox/env/manifest.toml build section
-[build.my-workflows]
-command = '''
-  mkdir -p $out/share/workflows
-  cp -r workflows/* $out/share/workflows/
-'''
-
-# Build and publish
-flox build my-workflows
-flox publish my-workflows
-```
-
-## 🐛 Troubleshooting
-
-### Connection Issues
-
-```bash
-# Test server connection
-comfyui-info
-
-# If it fails, check:
-# 1. Is ComfyUI running?
-# 2. Correct host/port?
-COMFYUI_HOST=correct-host COMFYUI_PORT=8188 flox activate
-
-# 3. Firewall blocking connection?
-curl http://localhost:8188/system_stats
-```
-
-### Python Virtual Environment
-
-```bash
-# Rebuild the venv if needed
-rm -rf $FLOX_ENV_CACHE/venv
-flox activate  # Auto-recreates
-
-# Check venv is active
-which python  # Should show .flox/cache/venv/bin/python
-```
-
-### Workflow Compatibility
-
-```bash
-# Check required models are installed
-comfyui-models checkpoints
-
-# Verify workflow structure
-python -m json.tool < workflows/my-workflow.json
-
-# Test with simple prompt first
-comfyui-submit workflows/api/sd15.json -p "test" --steps 1
-```
-
-### Performance Issues
-
-```bash
-# Monitor server load
-comfyui-status --watch
-
-# Reduce parallel submissions
-comfyui-submit workflow.json -c 10  # Sequential instead of --parallel
-
-# Lower generation settings
-comfyui-submit workflow.json --steps 20 --width 512 --height 512
-```
-
-## 🤖 Architecture Notes (For AI Agents)
-
-### Key Components
-
-1. **Flox Environment Layer**:
-   - Manages Python 3.13 + uv package manager
-   - Provides `comfyui-scripts` package (version 0.6.9)
-   - Auto-configures Python virtual environment
-
-2. **Python Client Library**:
-   - WebSocket-based async communication
-   - Queue management and progress tracking
-   - Workflow JSON manipulation
-
-3. **CLI Tools**:
-   - Built with Click + Rich for terminal UI
-   - Each tool is a separate entry point
-   - Shared configuration via environment variables
-
-### Integration Points
-
-- **Server API**: WebSocket at `ws://{host}:{port}/ws`
-- **HTTP Endpoints**:
-  - `/prompt` - Submit workflows
-  - `/queue` - Queue management
-  - `/history` - Job history
-  - `/system_stats` - Server info
-  - `/object_info` - Available nodes/models
-
-### Workflow Format
-
-Workflows are ComfyUI API JSON format with variable substitution:
+Completed jobs are annotated with result metadata:
 
 ```json
 {
-  "6": {
-    "class_type": "CLIPTextEncode",
-    "inputs": {
-      "text": "%%PROMPT%%",  // Replaced by CLI
-      "clip": ["4", 0]
-    }
+  "prompt": "a sunset",
+  "_result": {
+    "prompt_id": "abc-123",
+    "images": ["output_00001_.png"],
+    "completed_at": "2026-03-19T20:03:08+00:00"
   }
 }
 ```
 
-Variables replaced by CLI:
-- `%%PROMPT%%` - Positive prompt
-- `%%NEGATIVE%%` - Negative prompt
-- `%%SEED%%` - Random seed
-- `%%STEPS%%` - Sampling steps
-- `%%CFG%%` - CFG scale
-- `%%WIDTH%%` - Image width
-- `%%HEIGHT%%` - Image height
-- `%%DENOISE%%` - Denoise strength
+## API Server Reference
 
-### Extension Points
+### Endpoints
 
-- Add new CLI commands in `src/comfyui_client/cli.py`
-- Extend workflow manipulation in `workflow.py`
-- Custom workflow templates in `workflows/api/`
-- Environment modifications in `.flox/env/manifest.toml`
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Health check |
+| `GET` | `/ready` | ComfyUI connectivity check |
+| `GET` | `/queue` | Running and pending job counts |
+| `GET` | `/status` | System stats, devices, and queue info |
+| `GET` | `/models` | List model type categories |
+| `GET` | `/models/{type}` | List models in a category |
+| `POST` | `/prompt` | Submit workflow, return images |
+| `POST` | `/cancel` | Cancel a specific job |
+| `POST` | `/cancel/all` | Interrupt running + clear queue |
+| `POST` | `/workflow/{model}/{op}` | Generate workflow from template |
 
-## 📚 Additional Resources
+### Template Routes
 
-- [ComfyUI Documentation](https://github.com/comfyanonymous/ComfyUI)
-- [Flox Documentation](https://flox.dev/docs)
-- [FloxHub](https://hub.flox.dev)
+Sixteen `POST /workflow/{model}/{operation}` endpoints are auto-discovered from Python modules in `workflows/templates/`. Each returns `{"prompt": <workflow>}` — the same shape that `POST /prompt` accepts.
+
+| | txt2img | img2img | upscale | inpaint |
+|------|---------|---------|---------|---------|
+| **sd15** | /workflow/sd15/txt2img | /workflow/sd15/img2img | /workflow/sd15/upscale | /workflow/sd15/inpaint |
+| **sdxl** | /workflow/sdxl/txt2img | /workflow/sdxl/img2img | /workflow/sdxl/upscale | /workflow/sdxl/inpaint |
+| **sd35** | /workflow/sd35/txt2img | /workflow/sd35/img2img | /workflow/sd35/upscale | /workflow/sd35/inpaint |
+| **flux** | /workflow/flux/txt2img | /workflow/flux/img2img | /workflow/flux/upscale | /workflow/flux/inpaint |
+
+All template endpoints are fully documented in the OpenAPI schema at `/docs`.
+
+### Webhook Delivery
+
+When `webhook_url` is provided to `POST /prompt`, the server returns `202 Accepted` immediately and delivers results asynchronously. Webhooks follow the [Standard Webhooks](https://www.standardwebhooks.com/) spec with HMAC-SHA256 signing.
+
+Set `COMFYUI_WEBHOOK_SECRET` to enable signature verification.
+
+Webhook payload:
+
+```json
+{
+  "id": "request-id",
+  "status": "completed",
+  "images": [{"filename": "out.png", "data": "<base64>", "content_type": "image/png"}],
+  "stats": {"total_ms": 5432, "prompt_id": "uuid"}
+}
+```
+
+### Image Conversion
+
+The `POST /prompt` endpoint supports on-the-fly image format conversion:
+
+```json
+{
+  "prompt": { ... },
+  "convert_output": {"format": "webp", "quality": 90}
+}
+```
+
+Supported formats: `png` (default), `jpeg`, `webp`.
+
+## CLI Reference
+
+### Core Tools
+
+| Command | Description |
+|---------|-------------|
+| `comfyui-submit` | Submit a workflow JSON with parameter overrides |
+| `comfyui-batch` | Process multiple jobs from a JSON batch file |
+| `comfyui-queue` | Show running and pending job counts |
+| `comfyui-cancel` | Cancel jobs (specific, current, or all) |
+| `comfyui-result` | Download images for a completed prompt ID |
+| `comfyui-status` | Show server info, devices, and queue status |
+| `comfyui-models` | List available models by category |
+| `comfyui-info` | Extract generation metadata from ComfyUI PNG files |
+| `comfyui-watch` | Watch a folder for job files |
+| `comfyui-serve` | Start the HTTP API server |
+
+### comfyui-submit
+
+The core submission tool. All 16 convenience scripts (`sd15-txt2img`, `flux-upscale`, etc.) are wrappers around this.
+
+```bash
+comfyui-submit <workflow.json> [OPTIONS]
+```
+
+**Options:**
+
+| Flag | Description |
+|------|-------------|
+| `-p, --prompt` | Positive prompt text |
+| `-n, --negative` | Negative prompt text |
+| `-s, --seed` | Random seed (default: random) |
+| `--steps` | Sampling steps |
+| `--cfg` | CFG guidance scale |
+| `-W, --width` | Image width in pixels |
+| `-H, --height` | Image height in pixels |
+| `-d, --denoise` | Denoise strength 0.0-1.0 (img2img/inpaint/upscale) |
+| `--sampler` | Sampler algorithm (euler, dpmpp_2m, etc.) |
+| `--scheduler` | Scheduler (normal, karras, simple, etc.) |
+| `-i, --image` | Input image path |
+| `-w, --wait` | Wait for completion and download results |
+| `-o, --output` | Output directory for images |
+| `-c, --count` | Generate multiple images with varied seeds |
+| `--parallel` | Submit all batch jobs simultaneously |
+| `--prefix` | Filename prefix for outputs |
+
+**Batch generation:**
+
+```bash
+# Sequential (one at a time)
+sdxl-txt2img -p "landscape" -c 5 -w -o ./output
+
+# Parallel (all at once)
+sdxl-txt2img -p "landscape" -c 5 --parallel -w -o ./output
+```
+
+### comfyui-info
+
+Extracts generation metadata embedded in ComfyUI PNG files:
+
+```bash
+comfyui-info output.png           # Human-readable summary
+comfyui-info output.png --json    # Raw JSON metadata
+```
+
+Shows: model, prompt, negative prompt, seed, steps, CFG, sampler, scheduler, dimensions.
+
+### comfyui-watch
+
+```bash
+comfyui-watch [OPTIONS]
+```
+
+| Flag | Description |
+|------|-------------|
+| `-d, --dir` | Watch directory (default: `$COMFYUI_WATCH_DIR`) |
+| `-w, --workflow` | Default workflow for jobs without a `workflow` key |
+| `-p, --poll` | Poll interval in seconds (default: 2.0) |
+
+### comfyui-serve
+
+```bash
+comfyui-serve [OPTIONS]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--host` | Bind address (default: `$COMFYUI_SERVE_HOST` or 0.0.0.0) |
+| `--port` | Bind port (default: `$COMFYUI_SERVE_PORT` or 3000) |
+| `--log-level` | Log level (default: info) |
+
+## Model Defaults
+
+Each model family has tuned defaults:
+
+| Model | Default Resolution | CFG | Steps | Notes |
+|-------|-------------------|-----|-------|-------|
+| SD 1.5 | 512 x 512 | 7.0 | 20 | Fastest, good for prototyping |
+| SDXL | 1024 x 1024 | 7.0 | 25 | High quality, good all-rounder |
+| SD 3.5 | 1024 x 1024 | 4.5 | 28 | Triple CLIP encoder (clip_l, clip_g, t5xxl) |
+| FLUX | 1024 x 1024 | 1.0 | 20 | Guidance-free, highest quality |
+
+## Bundled Workflows
+
+Sixteen API-format workflow JSONs under `workflows/api/`:
+
+```
+workflows/api/
+  sd15/   sd15-txt2img.json  sd15-img2img.json  sd15-upscale.json  sd15-inpaint.json
+  sdxl/   sdxl-txt2img.json  sdxl-img2img.json  sdxl-upscale.json  sdxl-inpaint.json
+  sd35/   sd35-txt2img.json  sd35-img2img.json  sd35-upscale.json  sd35-inpaint.json
+  flux/   flux-txt2img.json  flux-img2img.json  flux-upscale.json  flux-inpaint.json
+```
+
+These are standard ComfyUI API-format workflows. The CLI modifies node inputs directly — no template variables or placeholders. You can export your own workflows from ComfyUI (Settings > Save API Format) and use them with `comfyui-submit`.
+
+## Flox Services
+
+The manifest defines two services:
+
+```toml
+[services.comfyui-watch]
+command = "comfyui-watch"
+
+[services.comfyui-api]
+command = "comfyui-serve"
+```
+
+```bash
+flox activate --start-services        # Start both on activation
+flox services start                   # Start all services
+flox services start comfyui-api       # Start just the API server
+flox services stop                    # Stop all services
+```
+
+## Environment Variables
+
+### ComfyUI Connection
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COMFYUI_HOST` | `localhost` | ComfyUI server hostname |
+| `COMFYUI_PORT` | `8188` | ComfyUI server port |
+
+### API Server
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COMFYUI_SERVE_HOST` | `0.0.0.0` | Bind address |
+| `COMFYUI_SERVE_PORT` | `3000` | Bind port |
+| `COMFYUI_WEBHOOK_SECRET` | _(none)_ | HMAC-SHA256 secret for webhook signing |
+
+### Watch Folder
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COMFYUI_WATCH_DIR` | `$FLOX_ENV_CACHE/watch` | Directory to monitor |
+| `COMFYUI_WATCH_WORKFLOW` | _(none)_ | Default workflow for minimal job files |
+| `COMFYUI_WATCH_POLL` | `2.0` | Poll interval in seconds |
+
+### Workflow Discovery
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COMFYUI_WORKFLOW_DIR` | _(auto)_ | Custom template directory for API server |
+
+The API server resolves templates from (in order): `COMFYUI_WORKFLOW_DIR`, `$FLOX_ENV/share/comfyui-client/workflows/templates`, or the bundled `workflows/templates/` directory.
+
+## Man Pages
+
+Every command has a full man page:
+
+```bash
+man comfyui-submit
+man comfyui-serve
+man comfyui-watch
+man comfyui-client     # Overview (section 7)
+```
+
+## Project Structure
+
+```
+comfyui-client/
+  .flox/
+    env/manifest.toml                    # Flox environment (packages, services, vars)
+    pkgs/comfyui-scripts.nix             # Nix derivation (scripts, man pages, completions)
+  src/comfyui_client/
+    __init__.py                          # Public API exports
+    cli.py                               # CLI commands (Typer + Rich)
+    client.py                            # ComfyUI WebSocket/HTTP client
+    server.py                            # FastAPI server
+    templates.py                         # Template discovery and route registration
+    watcher.py                           # Watch folder daemon
+    webhooks.py                          # Webhook delivery with Standard Webhooks signing
+    workflow.py                          # Workflow JSON manipulation
+    conversion.py                        # Image format conversion (PNG/JPEG/WebP)
+    metadata.py                          # PNG metadata extraction (stdlib-only)
+  workflows/
+    api/{sd15,sdxl,sd35,flux}/           # 16 API-format workflow JSONs
+    templates/{sd15,sdxl,sd35,flux}/     # 16 Python template modules (Pydantic schemas)
+  pyproject.toml                         # Python package config (version 0.9.0)
+```
+
+## Development
+
+```bash
+# Edit source
+vim src/comfyui_client/server.py
+
+# Reinstall into venv
+pip install -e .
+
+# Build the Nix package
+flox build comfyui-scripts
+
+# Run the build output
+./result-comfyui-scripts/bin/sd15-txt2img -p "test" -w
+```
+
+### Custom Templates
+
+Add your own template by creating a Python module under `workflows/templates/{model}/{operation}.py`:
+
+```python
+"""My custom workflow template."""
+import random
+from pathlib import Path
+from pydantic import BaseModel, Field
+from comfyui_client.workflow import apply_params, load_workflow
+
+_JSON = Path(__file__).resolve().parents[2] / "api" / "sd15" / "sd15-txt2img.json"
+
+description = "My custom generation workflow"
+
+class Request(BaseModel):
+    prompt: str
+    seed: int = Field(default_factory=lambda: random.randint(0, 2**32 - 1))
+    steps: int = Field(default=20, ge=1, le=150)
+
+def generate(params: Request) -> dict:
+    workflow = load_workflow(_JSON)
+    return apply_params(workflow, prompt=params.prompt, seed=params.seed, steps=params.steps)
+```
+
+The API server auto-discovers and registers it as `POST /workflow/{model}/{operation}`.
+
+## Troubleshooting
+
+**Cannot connect to ComfyUI:**
+
+```bash
+# Verify ComfyUI is reachable
+curl http://localhost:8188/system_stats
+
+# Check host/port settings
+COMFYUI_HOST=192.168.1.100 flox activate
+```
+
+**Rebuild the virtual environment:**
+
+```bash
+rm -rf $FLOX_ENV_CACHE/venv
+flox activate    # Recreates automatically
+```
+
+**Check available models:**
+
+```bash
+comfyui-models checkpoints
+comfyui-models upscale_models
+```
+
+## Resources
+
+- [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
+- [Flox](https://flox.dev/docs)
 - [Issue Tracker](https://github.com/barstoolbluz/comfyui-client/issues)
 
-## 📄 License
+## License
 
-This project is packaged and distributed using Flox. See individual component licenses:
-- Python client: See `pyproject.toml`
-- ComfyUI workflows: Community-contributed
-- Flox environment: MIT
+See `pyproject.toml` for Python package license. ComfyUI workflows are community-contributed. Flox environment: MIT.

@@ -396,7 +396,7 @@ let
   manOverview = writeTextFile {
     name = "comfyui-client.7";
     text = ''
-      .TH COMFYUI-CLIENT 7 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CLIENT 7 "2026-03-19" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-client \- command-line interface for ComfyUI
       .SH DESCRIPTION
@@ -435,7 +435,8 @@ let
       Watch a folder for job files and submit them to ComfyUI automatically.
       .TP
       .BR comfyui-serve (1)
-      Start the HTTP API server for workflow submission and webhook delivery.
+      Start the HTTP API server for workflow submission, webhook delivery,
+      and typed workflow template endpoints.
       .SH WRAPPER SCRIPTS
       For convenience, the package includes wrapper scripts that automatically
       select the appropriate workflow file for common model/operation combinations.
@@ -519,6 +520,29 @@ let
       .PP
       Workflow files must be in ComfyUI API format (exported via "Save (API Format)"
       in the ComfyUI web interface or converted from standard format).
+      .SH WORKFLOW TEMPLATES
+      The API server (see
+      .BR comfyui-serve (1))
+      automatically discovers Python workflow template modules and registers typed
+      .B POST /workflow/{model}/{operation}
+      routes. These provide Pydantic-validated, OpenAPI-documented endpoints as an
+      alternative to submitting raw workflow JSON via
+      .BR "POST /prompt" .
+      .PP
+      Templates are bundled at:
+      .PP
+      .RS
+      .nf
+      $FLOX_ENV/share/comfyui-client/workflows/templates/<model>/<operation>.py
+      .fi
+      .RE
+      .PP
+      To use custom templates, set \fBCOMFYUI_WORKFLOW_DIR\fR to a directory
+      containing your own template tree.
+      .PP
+      See
+      .BR comfyui-serve (1)
+      for the full list of 16 template routes and usage examples.
       .SH ENVIRONMENT
       .TP
       .B COMFYUI_HOST
@@ -528,8 +552,24 @@ let
       Port of the ComfyUI server. Default: 8188
       .TP
       .B COMFYUI_WORKFLOWS
-      Base directory containing workflow files. Overrides the bundled workflows.
+      Base directory containing workflow JSON files. Overrides the bundled workflows.
       Default: $FLOX_ENV/share/comfyui-client/workflows
+      .TP
+      .B COMFYUI_WORKFLOW_DIR
+      Directory containing Python workflow template modules for the API server.
+      Overrides the bundled templates.
+      .TP
+      .B COMFYUI_SERVE_HOST
+      Bind address for the API server. Default: 0.0.0.0
+      .TP
+      .B COMFYUI_SERVE_PORT
+      Bind port for the API server. Default: 3000
+      .TP
+      .B COMFYUI_WEBHOOK_SECRET
+      HMAC-SHA256 secret for signing webhook payloads. Optional.
+      .TP
+      .B COMFYUI_WATCH_DIR
+      Directory monitored by the folder watcher. Default: $FLOX_ENV_CACHE/watch
       .SH REMOTE OPERATION
       Commands use HTTP for workflow submission, queue queries, and image retrieval.
       The \fB\-\-wait\fR flag uses a WebSocket connection for real-time progress
