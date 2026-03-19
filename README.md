@@ -486,4 +486,4 @@ comfyui-models upscale_models
 
 ## License
 
-See `pyproject.toml` for Python package license. ComfyUI workflows are community-contributed. Flox environment: MIT.
+MIT. See `LICENSE` for details.

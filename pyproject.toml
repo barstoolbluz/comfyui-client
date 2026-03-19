@@ -2,6 +2,7 @@
 name = "comfyui-client"
 version = "0.9.0"
 description = "CLI client and API server for ComfyUI"
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.27",
