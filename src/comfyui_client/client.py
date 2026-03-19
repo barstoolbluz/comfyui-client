@@ -48,6 +48,39 @@ class ComfyUIClient:
         response.raise_for_status()
         return response.json()
 
+    def interrupt(self):
+        """Interrupt the currently running workflow"""
+        response = httpx.post(f"{self.base_url}/interrupt", json={})
+        response.raise_for_status()
+
+    def delete_from_queue(self, prompt_ids: list[str]):
+        """Delete specific prompt IDs from the queue"""
+        response = httpx.post(f"{self.base_url}/queue", json={"delete": prompt_ids})
+        response.raise_for_status()
+
+    def clear_queue(self):
+        """Clear all pending items from the queue"""
+        response = httpx.post(f"{self.base_url}/queue", json={"clear": True})
+        response.raise_for_status()
+
+    def get_system_stats(self) -> dict:
+        """Get system stats (versions, RAM, devices)"""
+        response = httpx.get(f"{self.base_url}/system_stats")
+        response.raise_for_status()
+        return response.json()
+
+    def get_model_types(self) -> list[str]:
+        """Get available model folder types"""
+        response = httpx.get(f"{self.base_url}/models")
+        response.raise_for_status()
+        return response.json()
+
+    def get_models(self, folder: str) -> list[str]:
+        """Get models in a specific folder"""
+        response = httpx.get(f"{self.base_url}/models/{folder}")
+        response.raise_for_status()
+        return response.json()
+
     def get_image(self, filename: str, subfolder: str = "", type: str = "output") -> bytes:
         """Download image from ComfyUI"""
         response = httpx.get(
@@ -57,8 +90,16 @@ class ComfyUIClient:
         response.raise_for_status()
         return response.content
 
-    async def _ws_wait(self, prompt_id: str, on_progress=None) -> dict:
-        """Listen on WebSocket until workflow completes"""
+    async def async_wait_for_completion(self, prompt_id: str, on_progress=None) -> dict:
+        """Async wait for workflow completion via WebSocket.
+
+        Can be awaited directly in async contexts (e.g., FastAPI).
+        """
+        # Fast path: if already completed (cached/instant execution), return now
+        history = self.get_history(prompt_id)
+        if prompt_id in history:
+            return history[prompt_id]
+
         async with websockets.connect(self.ws_url, max_size=2**24) as ws:
             while True:
                 raw = await asyncio.wait_for(ws.recv(), timeout=1800)
@@ -86,4 +127,4 @@ class ComfyUIClient:
 
     def wait_for_completion(self, prompt_id: str, on_progress=None) -> dict:
         """Wait for workflow completion via WebSocket"""
-        return asyncio.run(self._ws_wait(prompt_id, on_progress))
+        return asyncio.run(self.async_wait_for_completion(prompt_id, on_progress))

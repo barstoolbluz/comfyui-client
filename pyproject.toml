@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-client"
-version = "0.1.0"
+version = "0.7.0"
 description = "CLI client for ComfyUI API"
 requires-python = ">=3.11"
 dependencies = [
@@ -17,6 +17,11 @@ dev = ["pytest", "ruff"]
 comfyui-submit = "comfyui_client.cli:submit_cli"
 comfyui-queue = "comfyui_client.cli:queue_cli"
 comfyui-result = "comfyui_client.cli:result_cli"
+comfyui-batch = "comfyui_client.cli:batch_cli"
+comfyui-cancel = "comfyui_client.cli:cancel_cli"
+comfyui-status = "comfyui_client.cli:status_cli"
+comfyui-models = "comfyui_client.cli:models_cli"
+comfyui-info = "comfyui_client.cli:info_cli"
 
 [build-system]
 requires = ["hatchling"]

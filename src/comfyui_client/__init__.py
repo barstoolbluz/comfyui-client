@@ -1,9 +1,12 @@
 """ComfyUI API Client"""
 from .client import ComfyUIClient
+from .metadata import extract_comfyui_metadata, summarize_metadata
 from .workflow import (
     load_workflow,
+    clean_workflow,
     set_prompt,
     set_seed,
+    get_seed,
     set_steps,
     set_cfg,
     set_dimensions,
@@ -15,9 +18,13 @@ from .workflow import (
 
 __all__ = [
     "ComfyUIClient",
+    "extract_comfyui_metadata",
+    "summarize_metadata",
     "load_workflow",
+    "clean_workflow",
     "set_prompt",
     "set_seed",
+    "get_seed",
     "set_steps",
     "set_cfg",
     "set_dimensions",
