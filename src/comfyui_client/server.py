@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from .client import ComfyUIClient
 from .conversion import encode_image_for_payload
+from .templates import discover_templates, register_template_routes
 from .webhooks import WebhookPayload, deliver_webhook
 from .workflow import clean_workflow
 
@@ -86,6 +87,11 @@ async def lifespan(app: FastAPI):
     app.state.client = ComfyUIClient(host=host, port=port)
     app.state.webhook_secret = os.environ.get("COMFYUI_WEBHOOK_SECRET")
     logger.info("ComfyUI client targeting %s:%d", host, port)
+
+    templates = discover_templates()
+    register_template_routes(app, templates)
+    logger.info("Loaded %d workflow templates", len(templates))
+
     yield
 
 

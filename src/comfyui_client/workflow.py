@@ -161,6 +161,75 @@ def set_input_image(workflow: dict, image_path: str) -> dict:
     return workflow
 
 
+def set_sd3_prompt(workflow: dict, positive: str, negative: str = "") -> dict:
+    """Set prompts in CLIPTextEncodeSD3 nodes (SD 3.5 triple-encoder).
+
+    Sets clip_l, clip_g, and t5xxl all to the same text for each prompt node.
+    Matches nodes by _meta.title containing 'positive' or 'negative'.
+    """
+    for node_id, node in workflow.items():
+        if not isinstance(node, dict):
+            continue
+        if node.get("class_type") != "CLIPTextEncodeSD3":
+            continue
+        title = node.get("_meta", {}).get("title", "").lower()
+        if "positive" in title:
+            node["inputs"]["clip_l"] = positive
+            node["inputs"]["clip_g"] = positive
+            node["inputs"]["t5xxl"] = positive
+        elif "negative" in title:
+            node["inputs"]["clip_l"] = negative
+            node["inputs"]["clip_g"] = negative
+            node["inputs"]["t5xxl"] = negative
+    return workflow
+
+
+def set_upscale_params(workflow: dict, seed=None, steps=None, cfg=None,
+                       denoise=None, upscale_by=None,
+                       sampler_name=None, scheduler=None) -> dict:
+    """Set parameters on UltimateSDUpscale nodes."""
+    for node_id, node in workflow.items():
+        if not isinstance(node, dict):
+            continue
+        if node.get("class_type") != "UltimateSDUpscale":
+            continue
+        inputs = node["inputs"]
+        if seed is not None:
+            inputs["seed"] = seed
+        if steps is not None:
+            inputs["steps"] = steps
+        if cfg is not None:
+            inputs["cfg"] = cfg
+        if denoise is not None:
+            inputs["denoise"] = denoise
+        if upscale_by is not None:
+            inputs["upscale_by"] = upscale_by
+        if sampler_name is not None:
+            inputs["sampler_name"] = sampler_name
+        if scheduler is not None:
+            inputs["scheduler"] = scheduler
+    return workflow
+
+
+def set_inpaint_images(workflow: dict, image: str, mask: str) -> dict:
+    """Set image and mask on separate LoadImage nodes.
+
+    Differentiates by _meta.title: nodes with 'mask' in the title get the mask
+    path, all others get the image path.
+    """
+    for node_id, node in workflow.items():
+        if not isinstance(node, dict):
+            continue
+        if node.get("class_type") != "LoadImage":
+            continue
+        title = node.get("_meta", {}).get("title", "").lower()
+        if "mask" in title:
+            node["inputs"]["image"] = mask
+        else:
+            node["inputs"]["image"] = image
+    return workflow
+
+
 def apply_params(workflow, prompt=None, negative=None, seed=None, steps=None,
                  cfg=None, width=None, height=None, denoise=None,
                  sampler=None, scheduler=None, image=None):

@@ -2,12 +2,20 @@
   "lockfile-version": 1,
   "manifest": {
     "version": 1,
+    "vars": {
+      "COMFYUI_SERVE_HOST": "0.0.0.0",
+      "COMFYUI_SERVE_PORT": "3000"
+    },
     "hook": {
       "on-activate": "export COMFYUI_WATCH_DIR=\"${COMFYUI_WATCH_DIR:-$FLOX_ENV_CACHE/watch}\"\n"
     },
     "profile": {},
     "options": {},
     "services": {
+      "comfyui-api": {
+        "command": "comfyui-serve",
+        "is-daemon": false
+      },
       "comfyui-watch": {
         "command": "comfyui-watch",
         "is-daemon": false

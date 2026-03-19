@@ -17,6 +17,9 @@ from .workflow import (
     set_sampler,
     set_scheduler,
     set_input_image,
+    set_sd3_prompt,
+    set_upscale_params,
+    set_inpaint_images,
     apply_params,
 )
 
@@ -43,4 +46,7 @@ __all__ = [
     "set_sampler",
     "set_scheduler",
     "set_input_image",
+    "set_sd3_prompt",
+    "set_upscale_params",
+    "set_inpaint_images",
 ]

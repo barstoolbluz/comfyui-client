@@ -56,7 +56,7 @@ let
   manSubmit = writeTextFile {
     name = "comfyui-submit.1";
     text = ''
-      .TH COMFYUI-SUBMIT 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-SUBMIT 1 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-submit \- submit a workflow to ComfyUI
       .SH SYNOPSIS
@@ -252,7 +252,7 @@ let
   manQueue = writeTextFile {
     name = "comfyui-queue.1";
     text = ''
-      .TH COMFYUI-QUEUE 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-QUEUE 1 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-queue \- show ComfyUI queue status
       .SH SYNOPSIS
@@ -313,7 +313,7 @@ let
   manResult = writeTextFile {
     name = "comfyui-result.1";
     text = ''
-      .TH COMFYUI-RESULT 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-RESULT 1 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-result \- retrieve results from a ComfyUI workflow
       .SH SYNOPSIS
@@ -396,7 +396,7 @@ let
   manOverview = writeTextFile {
     name = "comfyui-client.7";
     text = ''
-      .TH COMFYUI-CLIENT 7 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CLIENT 7 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-client \- command-line interface for ComfyUI
       .SH DESCRIPTION
@@ -600,7 +600,7 @@ let
   manBatch = writeTextFile {
     name = "comfyui-batch.1";
     text = ''
-      .TH COMFYUI-BATCH 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-BATCH 1 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-batch \- run multiple ComfyUI jobs from a batch file
       .SH SYNOPSIS
@@ -711,7 +711,7 @@ let
   manStatus = writeTextFile {
     name = "comfyui-status.1";
     text = ''
-      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-STATUS 1 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-status \- show ComfyUI server status and system info
       .SH SYNOPSIS
@@ -760,7 +760,7 @@ let
   manModels = writeTextFile {
     name = "comfyui-models.1";
     text = ''
-      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-MODELS 1 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-models \- list available ComfyUI models
       .SH SYNOPSIS
@@ -824,7 +824,7 @@ let
   manInfo = writeTextFile {
     name = "comfyui-info.1";
     text = ''
-      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-INFO 1 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-info \- display generation metadata from ComfyUI PNG images
       .SH SYNOPSIS
@@ -904,7 +904,7 @@ let
   manCancel = writeTextFile {
     name = "comfyui-cancel.1";
     text = ''
-      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-CANCEL 1 "2026-02-23" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-cancel \- cancel running or pending ComfyUI jobs
       .SH SYNOPSIS
@@ -982,7 +982,7 @@ let
   manWatch = writeTextFile {
     name = "comfyui-watch.1";
     text = ''
-      .TH COMFYUI-WATCH 1 "2026-03-19" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-WATCH 1 "2026-03-19" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-watch \- watch a folder for ComfyUI job files
       .SH SYNOPSIS
@@ -1191,7 +1191,7 @@ let
   manServe = writeTextFile {
     name = "comfyui-serve.1";
     text = ''
-      .TH COMFYUI-SERVE 1 "2026-03-19" "comfyui-client 0.8.0" "ComfyUI Client Manual"
+      .TH COMFYUI-SERVE 1 "2026-03-19" "comfyui-client 0.9.0" "ComfyUI Client Manual"
       .SH NAME
       comfyui-serve \- start the comfyui-client API server
       .SH SYNOPSIS
@@ -1354,6 +1354,50 @@ let
       flox services start comfyui-api
       .fi
       .RE
+      .SH WORKFLOW TEMPLATES
+      On startup, the server discovers Python workflow template modules and
+      registers typed \fBPOST /workflow/{model}/{operation}\fR routes. These
+      provide Pydantic-validated, OpenAPI-documented endpoints as an alternative
+      to submitting raw workflow JSON via \fBPOST /prompt\fR.
+      .PP
+      Available template routes (16 total):
+      .PP
+      .RS
+      .nf
+      POST /workflow/sd15/txt2img    SD 1.5 text-to-image
+      POST /workflow/sd15/img2img    SD 1.5 image-to-image
+      POST /workflow/sd15/upscale    SD 1.5 upscale
+      POST /workflow/sd15/inpaint    SD 1.5 inpainting
+      POST /workflow/sdxl/txt2img    SDXL text-to-image
+      POST /workflow/sdxl/img2img    SDXL image-to-image
+      POST /workflow/sdxl/upscale    SDXL upscale
+      POST /workflow/sdxl/inpaint    SDXL inpainting
+      POST /workflow/sd35/txt2img    SD 3.5 text-to-image
+      POST /workflow/sd35/img2img    SD 3.5 image-to-image
+      POST /workflow/sd35/upscale    SD 3.5 upscale
+      POST /workflow/sd35/inpaint    SD 3.5 inpainting
+      POST /workflow/flux/txt2img    FLUX text-to-image
+      POST /workflow/flux/img2img    FLUX image-to-image
+      POST /workflow/flux/upscale    FLUX upscale
+      POST /workflow/flux/inpaint    FLUX inpainting
+      .fi
+      .RE
+      .PP
+      Each route accepts a JSON body with typed parameters (prompt, seed, steps,
+      cfg, etc.) and returns a \fB{"prompt": {...}}\fR response containing the
+      parameterized workflow ready for submission to ComfyUI.
+      .PP
+      To override the template search directory, set \fBCOMFYUI_WORKFLOW_DIR\fR.
+      .PP
+      Example:
+      .PP
+      .RS
+      .nf
+      curl -X POST http://localhost:3000/workflow/sdxl/txt2img \\
+        -H "Content-Type: application/json" \\
+        -d '{"prompt": "a sunset over mountains", "seed": 42, "steps": 25}'
+      .fi
+      .RE
       .SH SEE ALSO
       .BR comfyui-submit (1),
       .BR comfyui-queue (1),
@@ -1372,6 +1416,8 @@ let
   workflowFiles = runCommand "comfyui-workflows" {} ''
     mkdir -p $out/share/comfyui-client/workflows/api
     cp -r ${./../../workflows/api}/* $out/share/comfyui-client/workflows/api/
+    mkdir -p $out/share/comfyui-client/workflows/templates
+    cp -r ${./../../workflows/templates}/* $out/share/comfyui-client/workflows/templates/
   '';
 
   # Bundle man pages
@@ -1627,7 +1673,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "comfyui-scripts";
-  version = "0.8.0";
+  version = "0.9.0";
 
   dontUnpack = true;
   dontBuild = true;
