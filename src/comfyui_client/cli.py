@@ -1,5 +1,6 @@
 """CLI commands for ComfyUI client"""
 import json
+import logging
 import typer
 from copy import deepcopy
 from rich.console import Console
@@ -13,16 +14,9 @@ from .client import ComfyUIClient
 from .metadata import extract_comfyui_metadata, summarize_metadata
 from .workflow import (
     load_workflow,
-    set_prompt,
     set_seed,
     get_seed,
-    set_steps,
-    set_cfg,
-    set_dimensions,
-    set_denoise,
-    set_sampler,
-    set_scheduler,
-    set_input_image,
+    apply_params,
 )
 
 app = typer.Typer()
@@ -39,25 +33,10 @@ def get_client() -> ComfyUIClient:
 def _apply_params(workflow, prompt, negative, seed, steps, cfg, width, height,
                   denoise, sampler, scheduler, image):
     """Apply CLI parameter overrides to a workflow"""
-    if prompt:
-        workflow = set_prompt(workflow, prompt, negative)
-    if seed is not None:
-        workflow = set_seed(workflow, seed)
-    if steps is not None:
-        workflow = set_steps(workflow, steps)
-    if cfg is not None:
-        workflow = set_cfg(workflow, cfg)
-    if width is not None and height is not None:
-        workflow = set_dimensions(workflow, width, height)
-    if denoise is not None:
-        workflow = set_denoise(workflow, denoise)
-    if sampler is not None:
-        workflow = set_sampler(workflow, sampler)
-    if scheduler is not None:
-        workflow = set_scheduler(workflow, scheduler)
-    if image:
-        workflow = set_input_image(workflow, str(image))
-    return workflow
+    return apply_params(workflow, prompt=prompt, negative=negative, seed=seed,
+                        steps=steps, cfg=cfg, width=width, height=height,
+                        denoise=denoise, sampler=sampler, scheduler=scheduler,
+                        image=image)
 
 
 def _wait_and_download(client, prompt_id, output, label="", prefix=None):
@@ -78,15 +57,9 @@ def _wait_and_download(client, prompt_id, output, label="", prefix=None):
         result = client.wait_for_completion(prompt_id, on_progress=on_progress)
 
     if output and "outputs" in result:
-        output.mkdir(parents=True, exist_ok=True)
-        for node_id, node_output in result["outputs"].items():
-            for img in node_output.get("images", []):
-                data = client.get_image(img["filename"], img.get("subfolder", ""))
-                fname = img["filename"]
-                if prefix:
-                    fname = f"{prefix}_{fname}"
-                (output / fname).write_bytes(data)
-                console.print(f"[green]Saved:[/green] {output / fname}")
+        saved = client.download_images(result, output, prefix=prefix)
+        for path in saved:
+            console.print(f"[green]Saved:[/green] {path}")
 
     return result
 
@@ -388,6 +361,50 @@ def info(
         console.print(f"[bold]Size:[/bold]     {summary['width']}x{summary['height']}")
 
 
+@app.command()
+def watch(
+    dir: Path = typer.Option(None, "--dir", "-d", help="Watch directory (default: $COMFYUI_WATCH_DIR)"),
+    workflow: Path = typer.Option(None, "--workflow", "-w", help="Default workflow JSON file"),
+    poll: float = typer.Option(None, "--poll", "-p", help="Poll interval in seconds (default: 2.0)"),
+):
+    """Watch a folder for job files and submit them to ComfyUI"""
+    from .watcher import FolderWatcher
+
+    # Resolve defaults from env vars
+    if dir is None:
+        env_dir = os.environ.get("COMFYUI_WATCH_DIR")
+        if env_dir:
+            dir = Path(env_dir)
+        else:
+            console.print("[red]Error:[/red] --dir required (or set COMFYUI_WATCH_DIR)")
+            raise typer.Exit(1)
+
+    if workflow is None:
+        env_wf = os.environ.get("COMFYUI_WATCH_WORKFLOW")
+        if env_wf:
+            workflow = Path(env_wf)
+
+    if poll is None:
+        env_poll = os.environ.get("COMFYUI_WATCH_POLL")
+        poll = float(env_poll) if env_poll else 2.0
+
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+    client = get_client()
+    watcher = FolderWatcher(
+        watch_dir=dir,
+        client=client,
+        default_workflow=workflow,
+        poll_interval=poll,
+    )
+    watcher.start()
+
+
 def main():
     app()
 
@@ -401,6 +418,7 @@ cancel_app = typer.Typer()
 status_app = typer.Typer()
 models_app = typer.Typer()
 info_app = typer.Typer()
+watch_app = typer.Typer()
 
 submit_app.command()(submit)
 queue_app.command()(queue)
@@ -410,6 +428,7 @@ cancel_app.command()(cancel)
 status_app.command()(status)
 models_app.command()(models)
 info_app.command()(info)
+watch_app.command()(watch)
 
 
 def submit_cli():
@@ -450,3 +469,8 @@ def models_cli():
 def info_cli():
     """Entry point for comfyui-info"""
     info_app()
+
+
+def watch_cli():
+    """Entry point for comfyui-watch"""
+    watch_app()

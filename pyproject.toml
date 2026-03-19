@@ -22,6 +22,7 @@ comfyui-cancel = "comfyui_client.cli:cancel_cli"
 comfyui-status = "comfyui_client.cli:status_cli"
 comfyui-models = "comfyui_client.cli:models_cli"
 comfyui-info = "comfyui_client.cli:info_cli"
+comfyui-watch = "comfyui_client.cli:watch_cli"
 
 [build-system]
 requires = ["hatchling"]

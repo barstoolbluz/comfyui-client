@@ -5,5 +5,12 @@ version = 1
 [vars]
 
 [hook]
+on-activate = """
+export COMFYUI_WATCH_DIR="${COMFYUI_WATCH_DIR:-$FLOX_ENV_CACHE/watch}"
+"""
+
+[services.comfyui-watch]
+command = "comfyui-watch"
+is-daemon = false
 
 [profile]

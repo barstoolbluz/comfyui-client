@@ -1,6 +1,7 @@
 """ComfyUI API Client"""
 from .client import ComfyUIClient
 from .metadata import extract_comfyui_metadata, summarize_metadata
+from .watcher import FolderWatcher
 from .workflow import (
     load_workflow,
     clean_workflow,
@@ -14,14 +15,17 @@ from .workflow import (
     set_sampler,
     set_scheduler,
     set_input_image,
+    apply_params,
 )
 
 __all__ = [
     "ComfyUIClient",
+    "FolderWatcher",
     "extract_comfyui_metadata",
     "summarize_metadata",
     "load_workflow",
     "clean_workflow",
+    "apply_params",
     "set_prompt",
     "set_seed",
     "get_seed",

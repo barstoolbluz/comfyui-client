@@ -1,6 +1,7 @@
 """ComfyUI API Client"""
 import asyncio
 import json
+from pathlib import Path
 
 import httpx
 import uuid
@@ -128,3 +129,21 @@ class ComfyUIClient:
     def wait_for_completion(self, prompt_id: str, on_progress=None) -> dict:
         """Wait for workflow completion via WebSocket"""
         return asyncio.run(self.async_wait_for_completion(prompt_id, on_progress))
+
+    def download_images(self, result: dict, output_dir: Path, prefix: str = None) -> list[Path]:
+        """Download output images from a completed workflow result.
+
+        Returns list of saved file paths.
+        """
+        saved = []
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for node_id, node_output in result.get("outputs", {}).items():
+            for img in node_output.get("images", []):
+                data = self.get_image(img["filename"], img.get("subfolder", ""))
+                fname = img["filename"]
+                if prefix:
+                    fname = f"{prefix}_{fname}"
+                dest = output_dir / fname
+                dest.write_bytes(data)
+                saved.append(dest)
+        return saved

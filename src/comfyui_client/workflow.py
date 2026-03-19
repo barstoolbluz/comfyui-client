@@ -159,3 +159,28 @@ def set_input_image(workflow: dict, image_path: str) -> dict:
         if node.get("class_type") == "LoadImage":
             node["inputs"]["image"] = image_path
     return workflow
+
+
+def apply_params(workflow, prompt=None, negative=None, seed=None, steps=None,
+                 cfg=None, width=None, height=None, denoise=None,
+                 sampler=None, scheduler=None, image=None):
+    """Apply parameter overrides to a workflow"""
+    if prompt:
+        workflow = set_prompt(workflow, prompt, negative or "")
+    if seed is not None:
+        workflow = set_seed(workflow, seed)
+    if steps is not None:
+        workflow = set_steps(workflow, steps)
+    if cfg is not None:
+        workflow = set_cfg(workflow, cfg)
+    if width is not None and height is not None:
+        workflow = set_dimensions(workflow, width, height)
+    if denoise is not None:
+        workflow = set_denoise(workflow, denoise)
+    if sampler is not None:
+        workflow = set_sampler(workflow, sampler)
+    if scheduler is not None:
+        workflow = set_scheduler(workflow, scheduler)
+    if image:
+        workflow = set_input_image(workflow, str(image))
+    return workflow

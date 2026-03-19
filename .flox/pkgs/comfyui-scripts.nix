@@ -243,6 +243,7 @@ let
       .BR comfyui-status (1),
       .BR comfyui-models (1),
       .BR comfyui-info (1),
+      .BR comfyui-watch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -302,6 +303,7 @@ let
       .BR comfyui-status (1),
       .BR comfyui-models (1),
       .BR comfyui-info (1),
+      .BR comfyui-watch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -383,6 +385,7 @@ let
       .BR comfyui-status (1),
       .BR comfyui-models (1),
       .BR comfyui-info (1),
+      .BR comfyui-watch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -424,6 +427,9 @@ let
       .TP
       .BR comfyui-info (1)
       Display generation metadata from ComfyUI PNG images.
+      .TP
+      .BR comfyui-watch (1)
+      Watch a folder for job files and submit them to ComfyUI automatically.
       .SH WRAPPER SCRIPTS
       For convenience, the package includes wrapper scripts that automatically
       select the appropriate workflow file for common model/operation combinations.
@@ -579,7 +585,8 @@ let
       .BR comfyui-cancel (1),
       .BR comfyui-status (1),
       .BR comfyui-models (1),
-      .BR comfyui-info (1)
+      .BR comfyui-info (1),
+      .BR comfyui-watch (1)
     '';
   };
 
@@ -688,6 +695,7 @@ let
       .BR comfyui-status (1),
       .BR comfyui-models (1),
       .BR comfyui-info (1),
+      .BR comfyui-watch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -735,6 +743,7 @@ let
       .BR comfyui-cancel (1),
       .BR comfyui-models (1),
       .BR comfyui-info (1),
+      .BR comfyui-watch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -797,6 +806,7 @@ let
       .BR comfyui-cancel (1),
       .BR comfyui-status (1),
       .BR comfyui-info (1),
+      .BR comfyui-watch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -875,6 +885,7 @@ let
       .BR comfyui-cancel (1),
       .BR comfyui-status (1),
       .BR comfyui-models (1),
+      .BR comfyui-watch (1),
       .BR comfyui-client (7)
     '';
   };
@@ -951,6 +962,215 @@ let
       .BR comfyui-status (1),
       .BR comfyui-models (1),
       .BR comfyui-info (1),
+      .BR comfyui-watch (1),
+      .BR comfyui-client (7)
+    '';
+  };
+
+  manWatch = writeTextFile {
+    name = "comfyui-watch.1";
+    text = ''
+      .TH COMFYUI-WATCH 1 "2026-03-19" "comfyui-client 0.7.0" "ComfyUI Client Manual"
+      .SH NAME
+      comfyui-watch \- watch a folder for ComfyUI job files
+      .SH SYNOPSIS
+      .B comfyui-watch
+      .RI [ OPTIONS ]
+      .SH DESCRIPTION
+      .B comfyui-watch
+      monitors a directory for JSON job files, submits them to a running ComfyUI
+      server, downloads generated images, and moves job files to completed or
+      failed subdirectories. Jobs are processed sequentially in FIFO order
+      (oldest first by modification time).
+      .PP
+      On startup, the watcher creates five subdirectories under the watch
+      directory:
+      .TP
+      .B incoming/
+      Drop job JSON files here. The watcher picks them up automatically.
+      .TP
+      .B processing/
+      Files currently being submitted and awaited. If the watcher is
+      interrupted, files here are moved back to incoming/ on next startup.
+      .TP
+      .B completed/
+      Successfully processed jobs. The job file is annotated with
+      \fB_result\fR metadata containing the prompt ID, image filenames,
+      and completion timestamp.
+      .TP
+      .B failed/
+      Jobs that encountered errors. The job file is annotated with
+      \fB_error\fR metadata containing the error message and timestamp.
+      .TP
+      .B output/
+      Downloaded images from completed jobs.
+      .SH OPTIONS
+      .TP
+      .BR \-d ", " \-\-dir " " \fIPATH\fR
+      Watch directory. Default: \fB$COMFYUI_WATCH_DIR\fR
+      .TP
+      .BR \-w ", " \-\-workflow " " \fIPATH\fR
+      Default workflow JSON file used for jobs that don't specify their own.
+      Default: \fB$COMFYUI_WATCH_WORKFLOW\fR
+      .TP
+      .BR \-p ", " \-\-poll " " \fISECONDS\fR
+      Poll interval in seconds. Default: \fB$COMFYUI_WATCH_POLL\fR or 2.0
+      .SH JOB FILE FORMATS
+      Job files are JSON and support three formats:
+      .SS Minimal (parameters only)
+      A dict of parameter overrides applied to the default workflow:
+      .PP
+      .RS
+      .nf
+      {"prompt": "a sunset over mountains", "seed": 42, "steps": 25}
+      .fi
+      .RE
+      .SS Full (with workflow reference)
+      A dict with a \fBworkflow\fR key pointing to a workflow file:
+      .PP
+      .RS
+      .nf
+      {
+        "workflow": "/path/to/workflow.json",
+        "prompt": "a sunset over mountains",
+        "seed": 42
+      }
+      .fi
+      .RE
+      .PP
+      Relative workflow paths are resolved against the watch directory.
+      .SS Batch (array)
+      An array of job dicts, each processed sequentially:
+      .PP
+      .RS
+      .nf
+      [
+        {"prompt": "mountains at dawn", "seed": 1},
+        {"prompt": "ocean at sunset", "seed": 2}
+      ]
+      .fi
+      .RE
+      .SH SUPPORTED PARAMETERS
+      Job dicts accept these optional keys (same as comfyui-submit options):
+      .PP
+      .RS
+      .nf
+      prompt      Positive prompt text (string)
+      negative    Negative prompt text (string)
+      seed        Random seed (integer)
+      steps       Sampling steps (integer)
+      cfg         CFG scale (float)
+      width       Image width (integer)
+      height      Image height (integer)
+      denoise     Denoise strength 0.0-1.0 (float)
+      sampler     Sampler algorithm (string)
+      scheduler   Scheduler type (string)
+      image       Input image path (string)
+      workflow    Workflow JSON path (string, full format only)
+      .fi
+      .RE
+      .SH RESULT METADATA
+      After processing, job files are annotated with result metadata:
+      .SS Success
+      .PP
+      .RS
+      .nf
+      {
+        "prompt": "a sunset",
+        "_result": {
+          "prompt_id": "abc-123",
+          "images": ["ComfyUI_00001_.png"],
+          "completed_at": "2026-03-19T12:00:00+00:00"
+        }
+      }
+      .fi
+      .RE
+      .SS Failure
+      .PP
+      .RS
+      .nf
+      {
+        "prompt": "a sunset",
+        "_error": {
+          "message": "Workflow error: node 5 failed",
+          "failed_at": "2026-03-19T12:00:00+00:00"
+        }
+      }
+      .fi
+      .RE
+      .SH ERROR HANDLING
+      .TP
+      .B JSON parse errors
+      File moved to failed/ with error metadata.
+      .TP
+      .B Missing workflow
+      File moved to failed/ with error metadata.
+      .TP
+      .B ComfyUI unreachable
+      File left in processing/ and retried next poll cycle.
+      .TP
+      .B Execution errors
+      File moved to failed/ with error metadata including prompt_id.
+      .SH ENVIRONMENT
+      .TP
+      .B COMFYUI_WATCH_DIR
+      Default watch directory. Used when \fB\-\-dir\fR is not specified.
+      Set automatically by Flox to \fB$FLOX_ENV_CACHE/watch\fR.
+      .TP
+      .B COMFYUI_WATCH_WORKFLOW
+      Default workflow file path. Used when \fB\-\-workflow\fR is not specified.
+      .TP
+      .B COMFYUI_WATCH_POLL
+      Default poll interval in seconds. Used when \fB\-\-poll\fR is not specified.
+      .TP
+      .B COMFYUI_HOST
+      Hostname of the ComfyUI server. Default: localhost
+      .TP
+      .B COMFYUI_PORT
+      Port of the ComfyUI server. Default: 8188
+      .SH EXAMPLES
+      Watch a directory with a default workflow:
+      .PP
+      .RS
+      .nf
+      comfyui-watch -d ~/jobs -w ~/workflows/sdxl-txt2img.json
+      .fi
+      .RE
+      .PP
+      Use environment variables (e.g., inside Flox activate):
+      .PP
+      .RS
+      .nf
+      export COMFYUI_WATCH_DIR=~/jobs
+      export COMFYUI_WATCH_WORKFLOW=~/workflows/flux-txt2img.json
+      comfyui-watch
+      .fi
+      .RE
+      .PP
+      Submit a job by dropping a file:
+      .PP
+      .RS
+      .nf
+      echo '{"prompt": "a cat astronaut"}' > ~/jobs/incoming/cat.json
+      .fi
+      .RE
+      .PP
+      Run as a Flox service:
+      .PP
+      .RS
+      .nf
+      flox services start comfyui-watch
+      .fi
+      .RE
+      .SH SEE ALSO
+      .BR comfyui-submit (1),
+      .BR comfyui-batch (1),
+      .BR comfyui-queue (1),
+      .BR comfyui-result (1),
+      .BR comfyui-cancel (1),
+      .BR comfyui-status (1),
+      .BR comfyui-models (1),
+      .BR comfyui-info (1),
       .BR comfyui-client (7)
     '';
   };
@@ -972,6 +1192,7 @@ let
     cp ${manStatus} $out/share/man/man1/comfyui-status.1
     cp ${manModels} $out/share/man/man1/comfyui-models.1
     cp ${manInfo} $out/share/man/man1/comfyui-info.1
+    cp ${manWatch} $out/share/man/man1/comfyui-watch.1
     cp ${manOverview} $out/share/man/man7/comfyui-client.7
   '';
 
@@ -1115,6 +1336,28 @@ let
           fi
       }
 
+      _comfyui_watch_completions() {
+          local cur prev opts
+          COMPREPLY=()
+          cur="''${COMP_WORDS[COMP_CWORD]}"
+          prev="''${COMP_WORDS[COMP_CWORD-1]}"
+          opts="--dir --workflow --poll --help"
+
+          case "$prev" in
+              --dir|-d|--workflow|-w)
+                  COMPREPLY=( $(compgen -f -- "$cur") )
+                  return 0
+                  ;;
+              --poll|-p)
+                  return 0
+                  ;;
+          esac
+
+          if [[ "$cur" == -* ]]; then
+              COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+          fi
+      }
+
       # Register completions
       complete -F _comfyui_submit_completions comfyui-submit
       complete -F _comfyui_batch_completions comfyui-batch
@@ -1124,6 +1367,7 @@ let
       complete -F _comfyui_simple_completions comfyui-queue
       complete -F _comfyui_simple_completions comfyui-status
       complete -F _comfyui_simple_completions comfyui-result
+      complete -F _comfyui_watch_completions comfyui-watch
 
       # Register wrapper scripts (same options as submit)
       complete -F _comfyui_submit_completions sd15-txt2img
@@ -1149,7 +1393,7 @@ let
     mkdir -p $out/share/bash-completion/completions
     cp ${bashCompletions} $out/share/bash-completion/completions/comfyui-submit
     for cmd in comfyui-batch comfyui-cancel comfyui-status comfyui-models comfyui-info \
-               comfyui-queue comfyui-result \
+               comfyui-queue comfyui-result comfyui-watch \
                sd15-txt2img sd15-img2img sd15-upscale sd15-inpaint \
                sdxl-txt2img sdxl-img2img sdxl-upscale sdxl-inpaint \
                sd35-txt2img sd35-img2img sd35-upscale sd35-inpaint \
