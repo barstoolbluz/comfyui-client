@@ -154,8 +154,9 @@ def result(
     for node_id, node_output in res.get("outputs", {}).items():
         for img in node_output.get("images", []):
             data = client.get_image(img["filename"], img.get("subfolder", ""))
-            (output / img["filename"]).write_bytes(data)
-            console.print(f"[green]Saved:[/green] {output / img['filename']}")
+            fname = Path(img["filename"]).name
+            (output / fname).write_bytes(data)
+            console.print(f"[green]Saved:[/green] {output / fname}")
 
 
 @app.command()

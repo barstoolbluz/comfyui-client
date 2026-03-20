@@ -140,7 +140,7 @@ class ComfyUIClient:
         for node_id, node_output in result.get("outputs", {}).items():
             for img in node_output.get("images", []):
                 data = self.get_image(img["filename"], img.get("subfolder", ""))
-                fname = img["filename"]
+                fname = Path(img["filename"]).name
                 if prefix:
                     fname = f"{prefix}_{fname}"
                 dest = output_dir / fname
