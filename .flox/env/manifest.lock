@@ -3,9 +3,6 @@
   "manifest": {
     "version": 1,
     "install": {
-      "comfyui-scripts": {
-        "store-path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0"
-      },
       "python3": {
         "pkg-path": "python311"
       },
@@ -34,30 +31,6 @@
     }
   },
   "packages": [
-    {
-      "install_id": "comfyui-scripts",
-      "store_path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0",
-      "system": "aarch64-darwin",
-      "priority": 5
-    },
-    {
-      "install_id": "comfyui-scripts",
-      "store_path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0",
-      "system": "aarch64-linux",
-      "priority": 5
-    },
-    {
-      "install_id": "comfyui-scripts",
-      "store_path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0",
-      "system": "x86_64-darwin",
-      "priority": 5
-    },
-    {
-      "install_id": "comfyui-scripts",
-      "store_path": "/nix/store/nn87081h4ny2xkqnp3f48j8nqvb3wrj5-comfyui-scripts-0.9.0",
-      "system": "x86_64-linux",
-      "priority": 5
-    },
     {
       "attr_path": "python311",
       "broken": false,
