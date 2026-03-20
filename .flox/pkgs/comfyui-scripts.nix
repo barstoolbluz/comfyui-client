@@ -1713,7 +1713,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "comfyui-scripts";
-  version = "0.9.0";
+  version = "0.9.6";
 
   dontUnpack = true;
   dontBuild = true;
